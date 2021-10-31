@@ -35,8 +35,8 @@ public class JettyServer {
     private static Server jetty;
 
     /**
-     * Start the internal Jetty server. This also checks if a folder named "web-frontend" exists in the jarpath.
-     * If that's the case, Jetty will serve the content within this folder under the root domain.
+     * Start the internal Jetty server. This will also try to figure out if the JAR File contains a packaged frontend.
+     * When a frontend is found, jetty serves it under the web root.
      */
     public static void start(Config config) throws Exception {
 
