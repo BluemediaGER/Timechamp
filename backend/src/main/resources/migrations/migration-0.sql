@@ -1,0 +1,1 @@
+--This migration does nothing. It serves as an anchor point for the MigrationHelper.
