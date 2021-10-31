@@ -3,24 +3,25 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{dd.MM.yyyy} %d{HH:mm:ss.SSS} [%thread] %-5level%logger{0} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd} %d{HH:mm:ss.SSS} [%thread] %level %logger{0} - %msg%n</pattern>
         </encoder>
     </appender>
 
     <property name="LOG_DIR" value="log" />
     <property name="LOG_NAME" value="timechamp" />
+
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/${LOG_NAME}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>${LOG_DIR}/%d{dd-MM-yyyy}/${LOG_NAME}.gz</fileNamePattern>
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM-dd}/${LOG_NAME}.gz</fileNamePattern>
 
-            <!-- keep 7 days' worth of history capped at 3GB total size -->
+            <!-- keep 7 days' worth of history capped at 1GB total size -->
             <maxHistory>7</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{0} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger{0} - %msg%n</pattern>
         </encoder>
     </appender>
 
