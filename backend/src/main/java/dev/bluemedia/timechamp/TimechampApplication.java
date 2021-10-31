@@ -36,6 +36,10 @@ public class TimechampApplication {
             DBHelper.close();
         }));
 
+        // Initialize the database helper class
+        DBHelper.init(ConfigUtil.getConfig().getDatabaseJDBCUrl());
+
+        // Start Jetty web server
         try {
             JettyServer.start(ConfigUtil.getConfig());
         } catch (Exception ex) {
