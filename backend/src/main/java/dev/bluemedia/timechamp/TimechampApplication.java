@@ -1,8 +1,11 @@
 package dev.bluemedia.timechamp;
 
 import dev.bluemedia.timechamp.db.DBHelper;
+import dev.bluemedia.timechamp.model.object.User;
+import dev.bluemedia.timechamp.model.type.Permission;
 import dev.bluemedia.timechamp.util.ConfigUtil;
 import dev.bluemedia.timechamp.util.JettyServer;
+import dev.bluemedia.timechamp.util.RandomString;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
@@ -38,6 +41,15 @@ public class TimechampApplication {
 
         // Initialize the database helper class
         DBHelper.init(ConfigUtil.getConfig().getDatabaseJDBCUrl());
+
+        // Create default user if the database doesn't contain any users
+        if (DBHelper.getUserDao().countOf() == 0) {
+            String username = "timechamp";
+            String passwordSymbols = RandomString.UPPER_CASE + RandomString.LOWER_CASE + RandomString.DIGITS;
+            String password = new RandomString(12, passwordSymbols).nextString();
+            DBHelper.getUserDao().persist(new User(username, password, Permission.MANAGE));
+            LOG.info("New default user account created. Username: {} / Password: {}", username, password);
+        }
 
         // Start Jetty web server
         try {

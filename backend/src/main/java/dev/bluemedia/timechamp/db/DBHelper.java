@@ -3,8 +3,12 @@ package dev.bluemedia.timechamp.db;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
 import com.j256.ormlite.table.TableUtils;
+import dev.bluemedia.timechamp.db.dao.ApiKeyDaoImpl;
 import dev.bluemedia.timechamp.db.dao.DbMetadataDaoImpl;
+import dev.bluemedia.timechamp.db.dao.UserDaoImpl;
+import dev.bluemedia.timechamp.model.object.ApiKey;
 import dev.bluemedia.timechamp.model.object.DbMetadata;
+import dev.bluemedia.timechamp.model.object.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +31,12 @@ public class DBHelper {
     /** {@link DbMetadataDaoImpl} used to persist {@link DbMetadata} objects to the database */
     private static DbMetadataDaoImpl metadataDao;
 
+    /** {@link UserDaoImpl} used to persist {@link User} objects to the database */
+    private static UserDaoImpl userDao;
+
+    /** {@link ApiKeyDaoImpl} used to persist {@link ApiKey} objects to the database */
+    private static ApiKeyDaoImpl apiKeyDao;
+
     /**
      * Initialize database connections, tables and DAOs and start migrating the schema to the current version.
      * @param jdbcUrl JDBC URL used to connect to the database.
@@ -39,6 +49,12 @@ public class DBHelper {
 
             metadataDao = new DbMetadataDaoImpl(DaoManager.createDao(connectionSource, DbMetadata.class));
             TableUtils.createTableIfNotExists(connectionSource, DbMetadata.class);
+
+            userDao = new UserDaoImpl(DaoManager.createDao(connectionSource, User.class));
+            TableUtils.createTableIfNotExists(connectionSource, User.class);
+
+            apiKeyDao = new ApiKeyDaoImpl(DaoManager.createDao(connectionSource, ApiKey.class));
+            TableUtils.createTableIfNotExists(connectionSource, ApiKey.class);
 
             new MigrationHelper().migrate();
         } catch (SQLException ex) {
@@ -66,4 +82,19 @@ public class DBHelper {
         return metadataDao;
     }
 
+    /**
+     * Get the {@link UserDaoImpl} used to persist {@link User} objects to the database.
+     * @return {@link UserDaoImpl} used to persist {@link User} objects to the database.
+     */
+    public static UserDaoImpl getUserDao() {
+        return userDao;
+    }
+
+    /**
+     * Get the {@link ApiKeyDaoImpl} used to persist {@link ApiKey} objects to the database.
+     * @return {@link ApiKeyDaoImpl} used to persist {@link ApiKey} objects to the database.
+     */
+    public static ApiKeyDaoImpl getApiKeyDao() {
+        return apiKeyDao;
+    }
 }

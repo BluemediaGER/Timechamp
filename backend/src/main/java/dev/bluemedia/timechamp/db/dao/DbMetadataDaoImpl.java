@@ -7,6 +7,11 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 
+/**
+ * DAO to access and manipulate {@link DbMetadata} objects.
+ *
+ * @author Oliver Traber
+ */
 public class DbMetadataDaoImpl extends GenericDao<DbMetadata> {
 
     /** SLF4J logger for usage in this class */
@@ -33,6 +38,11 @@ public class DbMetadataDaoImpl extends GenericDao<DbMetadata> {
         return null;
     }
 
+    /**
+     * Execute a raw SQL statement on the database. Used by the {@link dev.bluemedia.timechamp.db.MigrationHelper}.
+     * @param statement SQL statement that should be executed.
+     * @throws SQLException Exception thrown if any error occurs during statement execution.
+     */
     public void executeRawStatement(String statement) throws SQLException {
         dao.executeRawNoArgs(statement);
     }
