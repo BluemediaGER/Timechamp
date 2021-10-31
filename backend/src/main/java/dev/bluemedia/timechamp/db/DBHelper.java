@@ -2,12 +2,15 @@ package dev.bluemedia.timechamp.db;
 
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
+import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 import dev.bluemedia.timechamp.db.dao.ApiKeyDaoImpl;
 import dev.bluemedia.timechamp.db.dao.DbMetadataDaoImpl;
+import dev.bluemedia.timechamp.db.dao.SessionDaoImpl;
 import dev.bluemedia.timechamp.db.dao.UserDaoImpl;
 import dev.bluemedia.timechamp.model.object.ApiKey;
 import dev.bluemedia.timechamp.model.object.DbMetadata;
+import dev.bluemedia.timechamp.model.object.Session;
 import dev.bluemedia.timechamp.model.object.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +40,9 @@ public class DBHelper {
     /** {@link ApiKeyDaoImpl} used to persist {@link ApiKey} objects to the database */
     private static ApiKeyDaoImpl apiKeyDao;
 
+    /** {@link SessionDaoImpl} used to persist {@link Session} objects to the database */
+    private static SessionDaoImpl sessionDao;
+
     /**
      * Initialize database connections, tables and DAOs and start migrating the schema to the current version.
      * @param jdbcUrl JDBC URL used to connect to the database.
@@ -47,20 +53,38 @@ public class DBHelper {
             connectionSource.setMaxConnectionAgeMillis(5 * 60 * 1000);
             connectionSource.setTestBeforeGet(true);
 
-            metadataDao = new DbMetadataDaoImpl(DaoManager.createDao(connectionSource, DbMetadata.class));
-            TableUtils.createTableIfNotExists(connectionSource, DbMetadata.class);
-
-            userDao = new UserDaoImpl(DaoManager.createDao(connectionSource, User.class));
-            TableUtils.createTableIfNotExists(connectionSource, User.class);
-
-            apiKeyDao = new ApiKeyDaoImpl(DaoManager.createDao(connectionSource, ApiKey.class));
-            TableUtils.createTableIfNotExists(connectionSource, ApiKey.class);
+            initDAOs(connectionSource);
+            initTables(connectionSource);
 
             new MigrationHelper().migrate();
         } catch (SQLException ex) {
             LOG.error("An unexpected error occurred", ex);
             System.exit(1);
         }
+    }
+
+    /**
+     * Method to initialize all DAOs used to access the database.
+     * @param connectionSource SQL connection source used to communicate with the database.
+     * @throws SQLException Exception thrown if any errors occur during DAO initialisation.
+     */
+    private static void initDAOs(ConnectionSource connectionSource) throws SQLException {
+        metadataDao = new DbMetadataDaoImpl(DaoManager.createDao(connectionSource, DbMetadata.class));
+        userDao = new UserDaoImpl(DaoManager.createDao(connectionSource, User.class));
+        apiKeyDao = new ApiKeyDaoImpl(DaoManager.createDao(connectionSource, ApiKey.class));
+        sessionDao = new SessionDaoImpl(DaoManager.createDao(connectionSource, Session.class));
+    }
+
+    /**
+     * Method to initialize all database tables used to store objects.
+     * @param connectionSource SQL connection source used to communicate with the database.
+     * @throws SQLException Exception thrown if any errors occur during table initialisation.
+     */
+    private static void initTables(ConnectionSource connectionSource) throws SQLException {
+        TableUtils.createTableIfNotExists(connectionSource, DbMetadata.class);
+        TableUtils.createTableIfNotExists(connectionSource, User.class);
+        TableUtils.createTableIfNotExists(connectionSource, ApiKey.class);
+        TableUtils.createTableIfNotExists(connectionSource, Session.class);
     }
 
     /** Close the database connections */
@@ -96,5 +120,13 @@ public class DBHelper {
      */
     public static ApiKeyDaoImpl getApiKeyDao() {
         return apiKeyDao;
+    }
+
+    /**
+     * Get the {@link SessionDaoImpl} used to persist {@link Session} objects to the database.
+     * @return {@link SessionDaoImpl} used to persist {@link Session} objects to the database.
+     */
+    public static SessionDaoImpl getSessionDao() {
+        return sessionDao;
     }
 }

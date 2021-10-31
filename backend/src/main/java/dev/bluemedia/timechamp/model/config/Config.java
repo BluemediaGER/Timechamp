@@ -31,6 +31,11 @@ public class Config {
     @JsonProperty(value = "redirectHttp")
     private boolean redirectHttp = true;
 
+    /** Boolean to set if Timechamp runs behind a reverse proxy.
+     * Setting this to true will enable usage of the X-Real-IP Header for session management */
+    @JsonProperty(value = "reverseProxy")
+    private boolean reverseProxy = false;
+
     /**
      * Get the JDBC url that should be used to connect to the database.
      * @return JDBC url that should be used for the database.
@@ -69,6 +74,14 @@ public class Config {
      */
     public boolean shouldRedirectHttp() {
         return redirectHttp;
+    }
+
+    /**
+     * Get if Timechamp is running behind an HTTP reverse proxy.
+     * @return true if Timechamp is located behind a reverse proxy, otherwise false.
+     */
+    public boolean isBehindReverseProxy() {
+        return reverseProxy;
     }
 
 }
