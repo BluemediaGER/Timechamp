@@ -2,6 +2,7 @@ package dev.bluemedia.timechamp.model.object;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.j256.ormlite.field.DatabaseField;
+import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
 import dev.bluemedia.timechamp.util.RandomString;
 
@@ -20,12 +21,12 @@ public class Session {
 
     // Init SecureRandom
     static {
-        random = new RandomString(32, RandomString.UPPER_CASE + RandomString.LOWER_CASE + RandomString.DIGITS);
+        random = new RandomString(128, RandomString.UPPER_CASE + RandomString.LOWER_CASE + RandomString.DIGITS);
     }
 
     /** Internal id of the session */
     @DatabaseField(id = true)
-    private String _id;
+    private String id;
 
     /** Key used by the client to authenticate itself */
     @DatabaseField
@@ -56,10 +57,12 @@ public class Session {
      * Create an new instance and generate an random session id and an random session key.
      */
     public Session(String parentUserId, String userAgent, String clientIP) {
-        this._id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString();
         this.sessionKey = random.nextString();
         this.lastAccessTime = LocalDateTime.now();
         this.parentUserId = parentUserId;
+        this.userAgent = userAgent;
+        this.lastAccessIpAddress = clientIP;
     }
 
     /**
@@ -67,7 +70,7 @@ public class Session {
      * @return The session's id.
      */
     public String getSessionId() {
-        return _id;
+        return id;
     }
 
     /**
@@ -95,10 +98,25 @@ public class Session {
     }
 
     /**
+     * Get the parent user object from the database.
+     * @return Parent user.
+     */
+    public User getParentUser() {
+        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId);
+    }
+
+    /**
      * Reset the {@link LocalDateTime} the session was last used to make an api call to the current time.
      */
     public void resetLasAccessTime() {
         this.lastAccessTime = LocalDateTime.now();
     }
 
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public String getLastAccessIpAddress() {
+        return lastAccessIpAddress;
+    }
 }

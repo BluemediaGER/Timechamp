@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
+import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
 import dev.bluemedia.timechamp.db.persister.PermissionPersister;
 import dev.bluemedia.timechamp.model.type.Permission;
@@ -21,7 +22,8 @@ import java.util.UUID;
 public class ApiKey {
 
     /** Instance of the {@link RandomString} used to generate the session keys */
-    private static final RandomString random = new RandomString(64);
+    private static final RandomString random = new RandomString(64,
+            RandomString.UPPER_CASE + RandomString.LOWER_CASE + RandomString.DIGITS);
 
     /** Internal id of the session */
     @DatabaseField(id = true)
@@ -33,6 +35,7 @@ public class ApiKey {
 
     /** Id of the user this key belongs to */
     @DatabaseField
+    @JsonIgnore
     private String parentUserId;
 
     /** Key used by the client to authenticate itself */
@@ -90,6 +93,11 @@ public class ApiKey {
     @JsonIgnore
     public String getParentUserId() {
         return parentUserId;
+    }
+
+    @JsonIgnore
+    public User getParentUser() {
+        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId);
     }
 
     /**

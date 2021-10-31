@@ -105,7 +105,7 @@ public class GenericDao<T> {
             queryBuilder.where().eq(attributeName, attributeValue);
             List<T> results = dao.query(queryBuilder.prepare());
             if (results.size() == 0) {
-                return null;
+                return new ArrayList<>();
             } else {
                 return results;
             }

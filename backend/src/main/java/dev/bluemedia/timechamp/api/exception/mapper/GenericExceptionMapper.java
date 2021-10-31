@@ -1,6 +1,7 @@
 package dev.bluemedia.timechamp.api.exception.mapper;
 
 import dev.bluemedia.timechamp.model.response.GenericError;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -29,18 +30,29 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
      */
     @Override
     public Response toResponse(Exception ex) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        ex.printStackTrace(pw);
-        LOG.error("An unexpected error occurred", ex);
         GenericError error = new GenericError();
-        error.error = "internal_error";
-        error.message = ex.getMessage();
-        return Response
-                .status(500)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(error)
-                .build();
+        if (ex instanceof WebApplicationException) {
+            WebApplicationException webAppEx = (WebApplicationException) ex;
+            error.error = webAppEx.getResponse().getStatusInfo().getReasonPhrase();
+            error.message = ex.getMessage();
+            if (webAppEx.getResponse().getStatusInfo().getFamily() != Response.Status.Family.CLIENT_ERROR) {
+                LOG.error("An unexpected error occurred", ex);
+            }
+            return Response
+                    .status(((WebApplicationException) ex).getResponse().getStatus())
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error)
+                    .build();
+        } else {
+            LOG.error("An unexpected error occurred", ex);
+            error.error = "internal_error";
+            error.message = ex.getMessage();
+            return Response
+                    .status(500)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(error)
+                    .build();
+        }
     }
 
 }

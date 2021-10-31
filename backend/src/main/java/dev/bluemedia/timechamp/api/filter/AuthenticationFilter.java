@@ -1,6 +1,9 @@
 package dev.bluemedia.timechamp.api.filter;
 
 import dev.bluemedia.timechamp.api.anotation.RequireAuthentication;
+import dev.bluemedia.timechamp.api.service.AuthenticationService;
+import dev.bluemedia.timechamp.model.object.ApiKey;
+import dev.bluemedia.timechamp.model.object.Session;
 import jakarta.annotation.Priority;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Priorities;
@@ -35,7 +38,34 @@ public class AuthenticationFilter implements ContainerRequestFilter {
      */
     @Override
     public void filter(ContainerRequestContext context) {
-        // TODO Implement authentication logic.
+        // Check if the client has sent a bearer authentication token and validate it
+        if (context.getHeaderString("X-API-Key") != null) {
+            ApiKey tryKey = AuthenticationService.validateApiKey(context.getHeaderString("X-API-Key"));
+            if (tryKey != null) {
+                context.setProperty("userFromFilter", tryKey.getParentUser());
+                context.setProperty("apiKeyFromFilter", tryKey);
+            } else {
+                abort(context, "API key invalid");
+            }
+            return;
+        }
+
+        Cookie sessCookie = null;
+        if (context.getCookies().containsKey("tsess")) {
+            sessCookie = context.getCookies().get("tsess");
+        }
+
+        if (sessCookie == null) {
+            abort(context, "Session cookie not set");
+            return;
+        }
+
+        Session trySession = AuthenticationService.validateSession(sessCookie.getValue());
+        if (trySession != null) {
+            context.setProperty("userFromFilter", trySession.getParentUser());
+        } else {
+            abort(context, "Session cookie invalid or expired");
+        }
     }
 
     /**
@@ -48,6 +78,19 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         context.abortWith(
                 Response
                         .status(Response.Status.UNAUTHORIZED)
+                        .cookie(
+                                new NewCookie(
+                                        new Cookie("tsess",
+                                                "",
+                                                "/",
+                                                context.getHeaderString("host")
+                                                        .substring(0, context
+                                                                .getHeaderString("host")
+                                                                .lastIndexOf(':')
+                                                        )
+                                        )
+                                )
+                        )
                         .entity("{\"error\":\"not_authenticated\"}")
                         .type(MediaType.APPLICATION_JSON)
                         .build()
