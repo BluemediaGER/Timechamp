@@ -124,17 +124,7 @@ public class AuthenticationService {
     }
 
     /**
-     * Delete the {@link ApiKey} with the given id from the database.
-     * @param keyId Id of the {@link ApiKey} that should be deleted.
-     */
-    public static void deleteApiKey(String keyId) {
-        ApiKey key = DBHelper.getApiKeyDao().getByAttributeMatch("id", keyId);
-        if (key == null) throw new NotFoundException("keyid_not_existing");
-        DBHelper.getApiKeyDao().delete(key);
-    }
-
-    /**
-     * Create an new {@link User} and persist it to the database.
+     * Create a new {@link User} and persist it to the database.
      * @param request {@link UserCreateRequest} containing the details for the new user.
      * @return Newly created {@link User}.
      */

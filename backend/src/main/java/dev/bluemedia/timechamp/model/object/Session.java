@@ -1,6 +1,7 @@
 package dev.bluemedia.timechamp.model.object;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
@@ -26,6 +27,7 @@ public class Session {
 
     /** Internal id of the session */
     @DatabaseField(id = true)
+    @JsonProperty("_id")
     private String id;
 
     /** Key used by the client to authenticate itself */
@@ -69,6 +71,7 @@ public class Session {
      * Get the session's id.
      * @return The session's id.
      */
+    @JsonProperty("_id")
     public String getSessionId() {
         return id;
     }
@@ -85,6 +88,7 @@ public class Session {
      * Get the session key used by the client to authenticate itself.
      * @return Session key used by the client to authenticate itself.
      */
+    @JsonIgnore
     public String getSessionKey() {
         return sessionKey;
     }
@@ -93,6 +97,7 @@ public class Session {
      * Get the id of the parent {@link User} of the session.
      * @return Id of the parent {@link User} of the session.
      */
+    @JsonIgnore
     public String getParentUserId() {
         return parentUserId;
     }
@@ -101,6 +106,7 @@ public class Session {
      * Get the parent user object from the database.
      * @return Parent user.
      */
+    @JsonIgnore
     public User getParentUser() {
         return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId);
     }
@@ -108,6 +114,7 @@ public class Session {
     /**
      * Reset the {@link LocalDateTime} the session was last used to make an api call to the current time.
      */
+    @JsonIgnore
     public void resetLasAccessTime() {
         this.lastAccessTime = LocalDateTime.now();
     }
