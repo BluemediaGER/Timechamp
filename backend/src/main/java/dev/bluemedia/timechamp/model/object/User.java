@@ -56,6 +56,18 @@ public class User {
     @DatabaseField(persisterClass = LocalDateTimePersister.class)
     private LocalDateTime lastLoginTime;
 
+    /** Name of the user */
+    @DatabaseField
+    private String name;
+
+    /** Employee id of the user */
+    @DatabaseField
+    private String employeeId;
+
+    /** Department of the user */
+    @DatabaseField
+    private String department;
+
     /** Default constructor for OrmLite */
     private User() {}
 
@@ -162,6 +174,30 @@ public class User {
     @JsonIgnore
     public void resetLastLoginTime() {
         lastLoginTime = LocalDateTime.now();
+    }
+
+    /**
+     * Get the {@link User} name.
+     * @return The {@link User} name.
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Get the {@link User} employeeId.
+     * @return The {@link User} employeeId.
+     */
+    public String getEmployeeId() {
+        return employeeId;
+    }
+
+    /**
+     * Get the {@link User} department.
+     * @return The {@link User} department.
+     */
+    public String getDepartment() {
+        return department;
     }
 
 }

@@ -3,9 +3,6 @@ package dev.bluemedia.timechamp.model.type;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Enum containing possible permission levels for clients.
  *
@@ -13,42 +10,42 @@ import java.util.Map;
  */
 public enum Permission {
 
-    READ,
-    READ_WRITE,
-    MANAGE;
+    READ("read"),
+    READ_WRITE("read_write"),
+    MANAGE("manage");
 
     /**
-     * Map used to convert enum values to and from strings for JSON serialisation and deserialization.
+     * Mapping between the enum values and their string representations.
      */
-    private static Map<String, Permission> typeMap = new HashMap<>();
+    private final String textValue;
 
-    static {
-        typeMap.put("read", READ);
-        typeMap.put("read_write", READ_WRITE);
-        typeMap.put("manage", MANAGE);
+    Permission(String textValue) {
+        this.textValue = textValue;
     }
 
     /**
-     * Get the enum value that represents the given string. The value is determined by the type map.
-     * @param value String value you want to get the enum value for.
-     * @return Enum value that represents the given string, or null if the string could not be matched to any value.
-     */
-    @JsonCreator
-    public static Permission forValue(String value) {
-        return typeMap.get(value.toLowerCase());
-    }
-
-    /**
-     * Get the lower case string representation of the enum value.
-     * @return Lower case string representation of the enum value
+     * Get the string representation of the enum value.
+     * @return String representation of the enum value
      */
     @JsonValue
-    public String toValue() {
-        for (Map.Entry<String, Permission> entry : typeMap.entrySet()) {
-            if (entry.getValue() == this)
-                return entry.getKey();
+    public String toTextValue() {
+        return this.textValue;
+    }
+
+    /**
+     * Get the enum value that represents the given string.
+     * @param textValue String value you want to get the enum value for.
+     * @return Enum value that represents the given string.
+     * @throws IllegalArgumentException if the given string could not be matched to any value.
+     */
+    @JsonCreator
+    public static Permission fromTextValue(String textValue) {
+        for (Permission type : Permission.values()) {
+            if (type.textValue.equals(textValue)) {
+                return type;
+            }
         }
-        return null;
+        throw new IllegalArgumentException("No enum constant for text value " + textValue);
     }
 
 }

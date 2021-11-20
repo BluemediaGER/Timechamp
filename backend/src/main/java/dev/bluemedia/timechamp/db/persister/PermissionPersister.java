@@ -30,7 +30,10 @@ public class PermissionPersister extends StringType {
      */
     @Override
     public Object javaToSqlArg(FieldType fieldType, Object javaObject) {
-        return javaObject.toString().toLowerCase();
+        if (javaObject instanceof Permission) {
+            return ((Permission) javaObject).toTextValue();
+        }
+        throw new IllegalArgumentException("Given object is not of type Permission.");
     }
 
     /**
@@ -41,7 +44,7 @@ public class PermissionPersister extends StringType {
      */
     @Override
     public Object sqlArgToJava(FieldType fieldType, Object sqlArg, int columnPos) {
-        return Permission.forValue((String) sqlArg);
+        return Permission.fromTextValue((String) sqlArg);
     }
 
 }
