@@ -111,7 +111,7 @@ public class AuthSessionController {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
         Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId);
-        if (session == null) throw new dev.bluemedia.timechamp.api.exception.NotFoundException("session_not_found");
+        if (session == null) throw new NotFoundException("session_not_found");
         // Allow principals with MANAGE permission to delete sessions of other users
         if (!session.getParentUserId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
             throw new NotFoundException("session_not_found");

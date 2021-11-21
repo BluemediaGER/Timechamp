@@ -9,6 +9,7 @@ import dev.bluemedia.timechamp.model.object.User;
 import dev.bluemedia.timechamp.model.request.ApiKeyCreateRequest;
 import dev.bluemedia.timechamp.model.request.PermissionUpdateRequest;
 import dev.bluemedia.timechamp.model.type.Permission;
+import dev.bluemedia.timechamp.api.exception.NotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -41,9 +42,10 @@ public class AuthApiKeyController {
     @Produces(MediaType.APPLICATION_JSON)
     public Response createApiKey(@Valid ApiKeyCreateRequest createRequest) {
         User parentUser = (User) context.getProperty("userFromFilter");
-        // Don't allow users to create API keys with MANAGE permissions,
+        Permission requestPermission = (Permission) context.getProperty("permission");
+        // Don't allow requesting entities to create API keys with MANAGE permissions,
         // if they do not have MANAGE permissions themselves.
-        if (createRequest.getPermission() == Permission.MANAGE && parentUser.getPermission() != Permission.MANAGE) {
+        if (createRequest.getPermission() == Permission.MANAGE && requestPermission != Permission.MANAGE) {
             return Response
                     .status(Response.Status.FORBIDDEN)
                     .entity("{\"error\":\"insufficient_permissions\"}")
@@ -153,8 +155,8 @@ public class AuthApiKeyController {
             }
         }
         ApiKey key = DBHelper.getApiKeyDao().getByAttributeMatch("id", keyId);
-        if (key == null) throw new dev.bluemedia.timechamp.api.exception.NotFoundException("apikey_not_found");
-        if (!key.getParentUserId().equals(parentUser.getId())) throw new dev.bluemedia.timechamp.api.exception.NotFoundException("apikey_not_found");
+        if (key == null) throw new NotFoundException("apikey_not_found");
+        if (!key.getParentUserId().equals(parentUser.getId())) throw new NotFoundException("apikey_not_found");
         // Don't allow users to create API keys with MANAGE permissions,
         // if they do not have MANAGE permissions themselves.
         if (permissionUpdateRequest.getPermission() == Permission.MANAGE &&

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
+import java.time.LocalTime;
+
 @DatabaseTable(tableName = "user_settings")
 public class UserSettings {
 
@@ -30,5 +32,6 @@ public class UserSettings {
     private boolean autoBreak;
     private int breakDurationMinutes;
     private int breakThresholdMinutes;
+    private LocalTime breakStartTime;
 
 }
