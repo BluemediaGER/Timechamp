@@ -4,6 +4,7 @@ import dev.bluemedia.timechamp.api.anotation.RequireAuthentication;
 import dev.bluemedia.timechamp.api.anotation.RequirePermission;
 import dev.bluemedia.timechamp.api.service.AuthenticationService;
 import dev.bluemedia.timechamp.db.DBHelper;
+import dev.bluemedia.timechamp.model.object.ApiKey;
 import dev.bluemedia.timechamp.model.object.User;
 import dev.bluemedia.timechamp.model.request.PasswordUpdateRequest;
 import dev.bluemedia.timechamp.model.type.Permission;
@@ -114,9 +115,22 @@ public class AuthController {
     @Path("/password")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public User updateUserPassword(@Valid PasswordUpdateRequest passwordUpdateRequest) {
+    public Response updateUserPassword(@Valid PasswordUpdateRequest passwordUpdateRequest) {
         User user = (User) context.getProperty("userFromFilter");
-        return AuthenticationService.updateUserPassword(user, passwordUpdateRequest.getPassword());
+        // Prevent API key with lower privileges from resetting the password of a user with higher privileges.
+        ApiKey apiKey = (ApiKey) context.getProperty("apiKeyFromFilter");
+        if (apiKey != null) {
+            if (user.getPermission() == Permission.MANAGE && apiKey.getPermission() != Permission.MANAGE) {
+                return Response
+                        .status(Response.Status.FORBIDDEN)
+                        .entity("{\"error\":\"insufficient_permissions\"}")
+                        .type(MediaType.APPLICATION_JSON)
+                        .build();
+            }
+        }
+        return Response
+                .ok(AuthenticationService.updateUserPassword(user, passwordUpdateRequest.getPassword()))
+                .build();
     }
 
 }
