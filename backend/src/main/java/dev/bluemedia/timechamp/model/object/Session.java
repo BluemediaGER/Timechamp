@@ -31,7 +31,7 @@ public class Session {
     private String id;
 
     /** Key used by the client to authenticate itself */
-    @DatabaseField
+    @DatabaseField(uniqueIndex = true)
     @JsonIgnore
     private String sessionKey;
 

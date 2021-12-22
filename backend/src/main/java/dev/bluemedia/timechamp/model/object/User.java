@@ -35,7 +35,7 @@ public class User {
     private String id;
 
     /** Username of the user */
-    @DatabaseField
+    @DatabaseField(uniqueIndex = true)
     private String username;
 
     /** Hash of the users password */
