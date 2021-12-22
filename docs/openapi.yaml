@@ -1,0 +1,946 @@
+openapi: 3.0.1
+info:
+  title: Timechamp
+  description: 'This document describes the API of Timechamp. The API is mainly used by the front end, but can also be integrated into your own projects using an API key.'
+  license:
+    name: GPL-3.0 License
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080/api
+  - url: https://localhost:8080/api
+tags:
+  - name: auth
+    description: Everything about authentication
+  - name: user
+    description: Endpoints for managing user accounts
+paths:
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Authenticate using an username and password to gain an session cookie for further actions.
+      description: This endpoint is only intended for use in a frontend. To authorize access from another application, please use an API key instead.
+      operationId: authLoginPassword
+      requestBody:
+        description: Login credentials to authenticate against the backend.
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        200:
+          description: Successfully authenticated. The response contains your own ApiUser objects as well as the session key in a cookie named `cdsess`. You need to include this cookie in all subsequent requests.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: cdsess=abcde12345;Version=1;Domain=localhost;Path=/
+        401:
+          description: Unauthenticated. The provided credentials are not valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: invalid_credentials
+  /auth/logout:
+    get:
+      tags:
+        - auth
+      summary: Invalidate the current session cookie.
+      description: This endpoint is only intended for use in a frontend.
+      operationId: authLogout
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { }
+                example: [ ]
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+      security:
+        - cookieAuth: [ ]
+  /auth/password:
+    put:
+      tags:
+        - auth
+      summary: Change the password of the currently logged in User.
+      description: Change the password of the currently logged in User.
+      operationId: authUpdateUserPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordChangeRequest"
+      responses:
+        200:
+          description: Password sucessfully changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions. This results from an read-only permission.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /auth/session:
+    get:
+      tags:
+        - auth
+      summary: Get all sessions of a User.
+      description: Get all sessions for the currently logged in user, or from another user based on their id. Querying other users requires \"manage\" permissions.
+      operationId: authGetUserSession
+      parameters:
+        - name: user
+          description: Optional id of another user whose sessions should be queried.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: query
+          required: false
+      responses:
+        200:
+          description: Sessions successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+    delete:
+      tags:
+        - auth
+      summary: Delete all sessions of a User.
+      description: Delete all sessions of the currently logged in user, or from another user based on their id. Deleteing sessions of other users requires \"manage\" permissions.
+      operationId: authClearUserSession
+      parameters:
+        - name: user
+          description: Optional id of another user whose sessions should be deleted.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: query
+          required: false
+      responses:
+        200:
+          description: All sessions successfully deleted.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+                example: []
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /auth/session/{id}:
+    get:
+      tags:
+        - auth
+      summary: Get a session of a User by it's id.
+      description: Get a session by it's id. Getting sessions of other users requires \"manage\" permissions.
+      operationId: authGetUserSessionById
+      parameters:
+        - name: id
+          description: Id of the session that should be retrieved.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      responses:
+        200:
+          description: Session successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: A session with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "session_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+    delete:
+      tags:
+        - auth
+      summary: Delete a session of a User by it's id.
+      description: Delete a session by it's id. Deleting sessions of other users requires \"manage\" permissions.
+      operationId: authDeleteUserSessionById
+      parameters:
+        - name: id
+          description: Id of the session that should be deleted.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      responses:
+        200:
+          description: Session successfully deleted.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+                example: []
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: A session with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "session_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /auth/api-key:
+    post:
+      tags:
+        - auth
+      summary: Create a new ApiKey.
+      description: Create a new ApiKey. To create an ApiKey, the creating principal requires at least the same rights that the ApiKey should be granted.
+      operationId: authCreateApiKey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyCreateRequest'
+      responses:
+        201:
+          description: ApiKey sucessfully created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKey"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions. Will be returned for example when a principal with \"read_write\" permissions tries to create an ApiKey with \"manage\" permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+    get:
+      tags:
+        - auth
+      summary: Get all ApiKey's of a User.
+      description: Get all ApiKey's of the currently logged in user, or from another user based on their id. Querying other users requires \"manage\" permissions.
+      operationId: authGetApiKeys
+      parameters:
+        - name: user
+          description: Optional id of another user whose ApiKey's should be queried.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: query
+          required: false
+      responses:
+        200:
+          description: ApiKey's sucessfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKey"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /auth/api-key/{id}:
+    get:
+      tags:
+        - auth
+      summary: Get an ApiKey by it's id.
+      description: Get an ApiKey by it's id. Getting ApiKey's of other users requires \"manage\" permissions.
+      operationId: authGetApiKeyById
+      parameters:
+        - name: id
+          description: Id of the ApiKey that should be retrieved.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      responses:
+        200:
+          description: ApiKey successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKey"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        404:
+          description: An ApiKey with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "apikey_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+    delete:
+      tags:
+        - auth
+      summary: Delete an ApiKey by it's id.
+      description: Delete an ApiKey by it's id. Deleting ApiKey's of other users requires \"manage\" permissions.
+      operationId: authDeleteApiKeyById
+      parameters:
+        - name: id
+          description: Id of the ApiKey that should be deleted.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      responses:
+        200:
+          description: ApiKey successfully deleted.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+                example: []
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: An ApiKey with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "apikey_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /auth/api-key/{id}/secret:
+    get:
+      tags:
+        - auth
+      summary: Get the secret of an ApiKey by it's id.
+      description: Get the secret of an ApiKey by it's id. To retrieve the secret, the current principal needs at least the same permissions as the ApiKey whose secret should be retrieved.
+      operationId: authApiKeyGetSecretById
+      parameters:
+        - name: id
+          description: Id of the ApiKey whose secret should be retrieved.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      responses:
+        200:
+          description: ApiKey secret successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  secret:
+                    type: string
+                    example: UELMCx7WLU4FgEwrGzj0IQ46rSKY3GOa2riVQJsD9Fh3nhyvZ7mBiQcYnbnIMB1I
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: An ApiKey with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "apikey_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /auth/api-key/{id}/permission:
+    put:
+      tags:
+        - auth
+      summary: Change the permission of an ApiKey by it's id.
+      description: Change the permission of an ApiKey by it's id. Changing ApiKey's of other users requires \"manage\" permissions.
+      operationId: authApiKeyChangePermissionById
+      parameters:
+        - name: id
+          description: Id of the ApiKey whose permission should be changed.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionChangeRequest'
+      responses:
+        200:
+          description: Permission sucessfully changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKey'
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: An ApiKey with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "apikey_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /user:
+    post:
+      tags:
+        - user
+      summary: Create a new user account.
+      description: Create a new user account. This endpoint requires \"manage\" permissions.
+      operationId: userCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        201:
+          description: User sucessfully created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+    get:
+      tags:
+        - user
+      summary: Get all user accounts currently stored in the database.
+      description: Get all user accounts currently stored in the database. This endpoint requires \"manage\" permissions.
+      operationId: userGetAll
+      responses:
+        200:
+          description: User accounts sucessfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /user/{id}:
+    get:
+      tags:
+        - user
+      summary: Get a user account by it's id.
+      description: Get a user account by it's id. This endpoint requires \"manage\" permissions.
+      operationId: userGetById
+      parameters:
+        - name: id
+          description: Id of the User that should be retreived.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      responses:
+        200:
+          description: User sucessfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: A User with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "user_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+    delete:
+      tags:
+        - user
+      summary: Delete a user account by it's id.
+      description: Delete a user account by it's id. This endpoint requires \"manage\" permissions.
+      operationId: userDeleteById
+      parameters:
+        - name: id
+          description: Id of the User that should be deleted.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      responses:
+        200:
+          description: User sucessfully deleted.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+                example: []
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: A User with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "user_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /user/{id}/password:
+    put:
+      tags:
+        - user
+      summary: Change the password of a user account by it's id.
+      description: Change the password of a user account by it's id. This endpoint requires \"manage\" permissions.
+      operationId: userChangePasswordById
+      parameters:
+        - name: id
+          description: Id of the user whose password should be changed.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+      responses:
+        200:
+          description: Password sucessfully changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: A User with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "user_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+  /user/{id}/permission:
+    put:
+      tags:
+        - user
+      summary: Change the permission of a user account by it's id.
+      description: Change the permission of a user account by it's id. This endpoint requires \"manage\" permissions.
+      operationId: userChangePermissionById
+      parameters:
+        - name: id
+          description: Id of the user whose permission should be changed.
+          schema:
+            type: string
+            example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionChangeRequest'
+      responses:
+        200:
+          description: Permission sucessfully changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        401:
+          description: You are not authenticated or your authentication secret is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+        403:
+          description: You have insufficient permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "insufficient_permissions"
+        404:
+          description: A User with the given id could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleLineError'
+              example:
+                error: "user_not_found"
+      security:
+        - cookieAuth: [ ]
+        - api_key: [ ]
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "timechamp"
+        password:
+          type: string
+          example: "VerySecurePassword1234"
+    Session:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+        userAgent:
+          type: string
+          example: Chrome on Win10
+        lastAccessTime:
+          type: string
+          format: date-time
+        lastAccessIpAddress:
+          type: string
+          example: "2001:0DB8:0000:0000:0000:0000:0000:0001"
+    ApiKey:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+        name:
+          type: string
+          example: "My Example App"
+        lastUsed:
+          type: string
+          format: date-time
+    ApiKeyCreateRequest:
+      type: object
+      properties:
+        keyName:
+          type: string
+          example: "My Example App"
+        permission:
+          type: string
+          enum:
+            - "read"
+            - "read_write"
+            - "manage"
+          example: "read_write"
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: cb78467f-6dbd-4563-ac01-0fdc9ca4c194
+        username:
+          type: string
+          example: "admin"
+        name:
+          type: string
+          example: "Jane Doe"
+        employeeId:
+          type: string
+          example: "12345"
+        department:
+          type: string
+          example: "IT"
+        lastLoginTime:
+          type: string
+          format: date-time
+        permission:
+          type: string
+          enum:
+            - "read"
+            - "read_write"
+            - "manage"
+          example: "read_write"
+    UserCreateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "JDoe"
+        password:
+          type: string
+          example: "VerySecurePassword1234"
+        permission:
+          type: string
+          enum:
+            - "read"
+            - "read_write"
+            - "manage"
+          example: "read_write"
+    PermissionChangeRequest:
+      type: object
+      properties:
+        permission:
+          type: string
+          enum:
+            - "read"
+            - "read_write"
+            - "manage"
+          example: "read_write"
+    PasswordChangeRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          example: "VerySecurePassword1234"
+    SingleLineError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: not_authenticated
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: X-API-Key
+      in: header
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: cdsess
