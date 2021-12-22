@@ -15,7 +15,6 @@ import dev.bluemedia.timechamp.model.object.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.SQLException;
 
 /**
@@ -93,7 +92,7 @@ public class DBHelper {
             if (connectionSource != null) {
                 connectionSource.close();
             }
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             LOG.error("An unexpected error occurred", ex);
         }
     }
