@@ -11,8 +11,6 @@ import dev.bluemedia.timechamp.model.request.PermissionUpdateRequest;
 import dev.bluemedia.timechamp.model.type.Permission;
 import dev.bluemedia.timechamp.api.exception.NotFoundException;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
@@ -20,6 +18,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST controller used to handle all API key related tasks.
@@ -64,12 +63,12 @@ public class AuthApiKeyController {
     @GET
     @RequireAuthentication
     @Produces(MediaType.APPLICATION_JSON)
-    public List<ApiKey> getApiKeys(@QueryParam("user") String managedUserId) {
+    public List<ApiKey> getApiKeys(@QueryParam("user") UUID managedUserId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User authenticatedUser = (User) context.getProperty("userFromFilter");
 
         // Allow principals with MANAGE permission to impersonate other users
-        String userId = authenticatedUser.getId();
+        UUID userId = authenticatedUser.getId();
         if (requestPermission == Permission.MANAGE && managedUserId != null) {
             userId = managedUserId;
         }
@@ -86,11 +85,11 @@ public class AuthApiKeyController {
     @RequireAuthentication
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public ApiKey getApiKey(@NotEmpty @PathParam("id") String apiKeyId) {
+    public ApiKey getApiKey(@PathParam("id") UUID apiKeyId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
 
-        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId);
+        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId.toString());
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
         // Allow principals with MANAGE permission to read API keys of other users
@@ -111,7 +110,7 @@ public class AuthApiKeyController {
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Path("/{id}/secret")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getApiKeySecret(@NotNull @PathParam("id") String keyId) {
+    public Response getApiKeySecret(@PathParam("id") UUID keyId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         ApiKey key = getApiKey(keyId);
 
@@ -144,7 +143,7 @@ public class AuthApiKeyController {
     @Path("/{id}/permission")
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateApiKeyPermission(@HeaderParam("X-API-Key") String authorizationHeader,
-                                           @PathParam("id") String keyId,
+                                           @PathParam("id") UUID keyId,
                                            @Valid PermissionUpdateRequest permissionUpdateRequest) {
         User parentUser = (User) context.getProperty("userFromFilter");
         // Prevent api key from changing its own permission
@@ -154,7 +153,7 @@ public class AuthApiKeyController {
                 throw new BadRequestException("cant_change_own_permission");
             }
         }
-        ApiKey key = DBHelper.getApiKeyDao().getByAttributeMatch("id", keyId);
+        ApiKey key = DBHelper.getApiKeyDao().getByAttributeMatch("id", keyId.toString());
         if (key == null) throw new NotFoundException("apikey_not_found");
         if (!key.getParentUserId().equals(parentUser.getId())) throw new NotFoundException("apikey_not_found");
         // Don't allow users to create API keys with MANAGE permissions,
@@ -184,11 +183,11 @@ public class AuthApiKeyController {
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteApiKey(@NotNull @PathParam("id") String apiKeyId) {
+    public Response deleteApiKey(@PathParam("id") UUID apiKeyId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
 
-        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId);
+        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId.toString());
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
         // Allow principals with MANAGE permission to delete API keys of other users

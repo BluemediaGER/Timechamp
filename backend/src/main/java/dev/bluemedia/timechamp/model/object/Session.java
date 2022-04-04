@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import dev.bluemedia.timechamp.db.DBHelper;
-import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
 import dev.bluemedia.timechamp.util.RandomString;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -28,7 +28,7 @@ public class Session {
     /** Internal id of the session */
     @DatabaseField(id = true)
     @JsonProperty("_id")
-    private String id;
+    private UUID id;
 
     /** Key used by the client to authenticate itself */
     @DatabaseField(uniqueIndex = true)
@@ -38,7 +38,7 @@ public class Session {
     /** Id of the {@link User} this {@link Session} was created for */
     @DatabaseField
     @JsonIgnore
-    private String parentUserId;
+    private UUID parentUserId;
 
     /** Human friendly user agent string that created the session */
     @DatabaseField
@@ -49,8 +49,8 @@ public class Session {
     private String lastAccessIpAddress;
 
     /** {@link LocalDateTime} when the session was last used to make an api call */
-    @DatabaseField(persisterClass = LocalDateTimePersister.class)
-    private LocalDateTime lastAccessTime;
+    @DatabaseField
+    private Timestamp lastAccessTime;
 
     /** Default constructor for OrmLite */
     private Session() {}
@@ -58,10 +58,10 @@ public class Session {
     /**
      * Create an new instance and generate an random session id and an random session key.
      */
-    public Session(String parentUserId, String userAgent, String clientIP) {
-        this.id = UUID.randomUUID().toString();
+    public Session(UUID parentUserId, String userAgent, String clientIP) {
+        this.id = UUID.randomUUID();
         this.sessionKey = random.nextString();
-        this.lastAccessTime = LocalDateTime.now();
+        this.lastAccessTime = Timestamp.valueOf(LocalDateTime.now());
         this.parentUserId = parentUserId;
         this.userAgent = userAgent;
         this.lastAccessIpAddress = clientIP;
@@ -72,7 +72,7 @@ public class Session {
      * @return The session's id.
      */
     @JsonProperty("_id")
-    public String getSessionId() {
+    public UUID getSessionId() {
         return id;
     }
 
@@ -81,7 +81,7 @@ public class Session {
      * @return {@link LocalDateTime} the session was last used to make an api call.
      */
     public LocalDateTime getLastAccessTime() {
-        return lastAccessTime;
+        return lastAccessTime.toLocalDateTime();
     }
 
     /**
@@ -98,7 +98,7 @@ public class Session {
      * @return Id of the parent {@link User} of the session.
      */
     @JsonIgnore
-    public String getParentUserId() {
+    public UUID getParentUserId() {
         return parentUserId;
     }
 
@@ -108,7 +108,7 @@ public class Session {
      */
     @JsonIgnore
     public User getParentUser() {
-        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId);
+        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId.toString());
     }
 
     /**
@@ -116,7 +116,7 @@ public class Session {
      */
     @JsonIgnore
     public void resetLasAccessTime() {
-        this.lastAccessTime = LocalDateTime.now();
+        this.lastAccessTime = Timestamp.valueOf(LocalDateTime.now());
     }
 
     public String getUserAgent() {

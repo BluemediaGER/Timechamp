@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
-import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
 import dev.bluemedia.timechamp.db.persister.PermissionPersister;
 import dev.bluemedia.timechamp.model.type.Permission;
 
@@ -14,6 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class User {
 
     /** Internal id of the user */
     @DatabaseField(id = true)
-    private String id;
+    private UUID id;
 
     /** Username of the user */
     @DatabaseField(uniqueIndex = true)
@@ -53,8 +53,8 @@ public class User {
     private Permission permission;
 
     /** Time at which the user logged in the last time */
-    @DatabaseField(persisterClass = LocalDateTimePersister.class)
-    private LocalDateTime lastLoginTime;
+    @DatabaseField
+    private Timestamp lastLoginTime;
 
     /** Name of the user */
     @DatabaseField
@@ -78,11 +78,11 @@ public class User {
      * @param permission {@link Permission} for the new user.
      */
     public User(String username, String password, Permission permission) {
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID();
         this.username = username;
         updatePassword(password);
         this.permission = permission;
-        this.lastLoginTime = LocalDateTime.now();
+        this.lastLoginTime = Timestamp.valueOf(LocalDateTime.now());
     }
 
     /**
@@ -90,7 +90,7 @@ public class User {
      * @return The {@link User} id.
      */
     @JsonProperty("_id")
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -115,7 +115,7 @@ public class User {
      * @return The time at which the {@link User} was last logged in.
      */
     public LocalDateTime getLastLoginTime() {
-        return lastLoginTime;
+        return lastLoginTime.toLocalDateTime();
     }
 
     /**
@@ -173,7 +173,7 @@ public class User {
      */
     @JsonIgnore
     public void resetLastLoginTime() {
-        lastLoginTime = LocalDateTime.now();
+        lastLoginTime = Timestamp.valueOf(LocalDateTime.now());
     }
 
     /**

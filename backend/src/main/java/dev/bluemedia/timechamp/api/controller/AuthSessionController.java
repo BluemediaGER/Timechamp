@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST controller to handle all session management related tasks.
@@ -36,12 +37,12 @@ public class AuthSessionController {
     @GET
     @RequireAuthentication
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Session> getSessions(@QueryParam("user") String managedUserId) {
+    public List<Session> getSessions(@QueryParam("user") UUID managedUserId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User authenticatedUser = (User) context.getProperty("userFromFilter");
 
         // Allow principals with MANAGE permission to impersonate other users
-        String userId = authenticatedUser.getId();
+        UUID userId = authenticatedUser.getId();
         if (requestPermission == Permission.MANAGE && managedUserId != null) {
             userId = managedUserId;
         }
@@ -59,12 +60,12 @@ public class AuthSessionController {
     @RequireAuthentication
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteSessions(@QueryParam("user") String managedUserId) throws SQLException {
+    public Response deleteSessions(@QueryParam("user") UUID managedUserId) throws SQLException {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User authenticatedUser = (User) context.getProperty("userFromFilter");
 
         // Allow principals with MANAGE permission to impersonate other users
-        String userId = authenticatedUser.getId();
+        UUID userId = authenticatedUser.getId();
         if (requestPermission == Permission.MANAGE && managedUserId != null) {
             userId = managedUserId;
         }
@@ -82,11 +83,11 @@ public class AuthSessionController {
     @RequireAuthentication
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Session getSession(@PathParam("id") String sessionId) {
+    public Session getSession(@PathParam("id") UUID sessionId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User authenticatedUser = (User) context.getProperty("userFromFilter");
 
-        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId);
+        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId.toString());
         if (session == null) throw new NotFoundException("session_not_found");
 
         // Allow principals with MANAGE permission to read sessions of other users
@@ -107,10 +108,10 @@ public class AuthSessionController {
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteSession(@PathParam("id") String sessionId) {
+    public Response deleteSession(@PathParam("id") UUID sessionId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
-        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId);
+        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId.toString());
         if (session == null) throw new NotFoundException("session_not_found");
         // Allow principals with MANAGE permission to delete sessions of other users
         if (!session.getParentUserId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {

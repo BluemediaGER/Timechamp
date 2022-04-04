@@ -5,11 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 import dev.bluemedia.timechamp.db.DBHelper;
-import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
 import dev.bluemedia.timechamp.db.persister.PermissionPersister;
 import dev.bluemedia.timechamp.model.type.Permission;
 import dev.bluemedia.timechamp.util.RandomString;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -27,7 +27,7 @@ public class ApiKey {
 
     /** Internal id of the session */
     @DatabaseField(id = true)
-    private String id;
+    private UUID id;
 
     /** Name for the api key */
     @DatabaseField
@@ -36,7 +36,7 @@ public class ApiKey {
     /** Id of the user this key belongs to */
     @DatabaseField
     @JsonIgnore
-    private String parentUserId;
+    private UUID parentUserId;
 
     /** Key used by the client to authenticate itself */
     @DatabaseField
@@ -47,19 +47,19 @@ public class ApiKey {
     @DatabaseField(persisterClass = PermissionPersister.class)
     public Permission permission;
 
-    /** {@link LocalDateTime} the api key was last used to make an api call. */
-    @DatabaseField(persisterClass = LocalDateTimePersister.class)
-    private LocalDateTime lastAccessTime;
+    /** {@link Timestamp} the api key was last used to make an api call. */
+    @DatabaseField
+    private Timestamp lastAccessTime;
 
     /**
      * Create an new instance and generate an random key id and an random authentication key.
      */
-    public ApiKey(String keyName, String parentUserId, Permission permission) {
-        this.id = UUID.randomUUID().toString();
+    public ApiKey(String keyName, UUID parentUserId, Permission permission) {
+        this.id = UUID.randomUUID();
         this.keyName = keyName;
         this.parentUserId = parentUserId;
         this.authenticationKey = random.nextString();
-        this.lastAccessTime = LocalDateTime.now();
+        this.lastAccessTime = Timestamp.valueOf(LocalDateTime.now());
         this.permission = permission;
     }
 
@@ -73,7 +73,7 @@ public class ApiKey {
      * @return The api keys id.
      */
     @JsonProperty("_id")
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -91,13 +91,13 @@ public class ApiKey {
      * @return The id of the user this key belongs to.
      */
     @JsonIgnore
-    public String getParentUserId() {
+    public UUID getParentUserId() {
         return parentUserId;
     }
 
     @JsonIgnore
     public User getParentUser() {
-        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId);
+        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId.toString());
     }
 
     /**
@@ -115,7 +115,7 @@ public class ApiKey {
      */
     @JsonProperty("lastUsed")
     public LocalDateTime getLastAccessTime() {
-        return lastAccessTime;
+        return lastAccessTime.toLocalDateTime();
     }
 
     /**
@@ -130,7 +130,7 @@ public class ApiKey {
      * Reset the {@link LocalDateTime} the api key was last used to make an api call to the current time.
      */
     public void resetLastAccessTime() {
-        this.lastAccessTime = LocalDateTime.now();
+        this.lastAccessTime = Timestamp.valueOf(LocalDateTime.now());
     }
 
     /**

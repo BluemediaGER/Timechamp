@@ -5,6 +5,8 @@ import dev.bluemedia.timechamp.model.type.Permission;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.UUID;
+
 /**
  * RequestModel used to create an new {@link dev.bluemedia.timechamp.model.object.User}.
  *
@@ -14,8 +16,6 @@ public class UserCreateRequest {
 
     /** Username of the new user */
     @JsonProperty("username")
-    @NotNull(message = "field is required")
-    @NotEmpty(message = "field cannot be empty")
     private String username;
 
     /** Password of the new user */

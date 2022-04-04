@@ -18,6 +18,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST controller used to handle all tasks related to user management.
@@ -68,8 +69,8 @@ public class UserController {
     @RequirePermission(Permission.MANAGE)
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public User getUser(@PathParam("id") String userId) {
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
+    public User getUser(@PathParam("id") UUID userId) {
+        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId.toString());
         if (user == null) throw new NotFoundException("user_not_found");
         return user;
     }
@@ -86,7 +87,7 @@ public class UserController {
     @Path("/{id}/password")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public User updateUserPassword(@PathParam("id") String userId,
+    public User updateUserPassword(@PathParam("id") UUID userId,
                                    @Valid PasswordUpdateRequest passwordUpdateRequest) {
         return AuthenticationService.updateUserPasswordById(userId, passwordUpdateRequest.getPassword());
     }
@@ -103,14 +104,14 @@ public class UserController {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/{id}/permission")
     @Produces(MediaType.APPLICATION_JSON)
-    public User updateUserPermission(@PathParam("id") String userId,
+    public User updateUserPermission(@PathParam("id") UUID userId,
                                      @Valid PermissionUpdateRequest permissionUpdateRequest) {
         User authenticatedUser = (User) context.getProperty("userFromFilter");
         // Prevent users from changing their own permissions
         if (authenticatedUser.getId().equals(userId)) {
             throw new BadRequestException("cant_change_own_permission");
         }
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
+        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId.toString());
         if (user == null) throw new NotFoundException("user_not_found");
         user.updatePermission(permissionUpdateRequest.getPermission());
         DBHelper.getUserDao().update(user);
@@ -127,7 +128,7 @@ public class UserController {
     @RequirePermission(Permission.MANAGE)
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteUser(@PathParam("id") String userId) {
+    public Response deleteUser(@PathParam("id") UUID userId) {
         User authenticatedUser = (User) context.getProperty("userFromFilter");
         return AuthenticationService.deleteUser(authenticatedUser, userId);
     }

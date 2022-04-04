@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Service used to manage all actions needed for authentication and access management.
@@ -93,7 +94,7 @@ public class AuthenticationService {
      * Create a new {@link ApiKey} and persist it in the database.
      * @return Generated {@link ApiKey}.
      */
-    public static ApiKey createApiKey(String parentUserId, ApiKeyCreateRequest request) {
+    public static ApiKey createApiKey(UUID parentUserId, ApiKeyCreateRequest request) {
         ApiKey key = new ApiKey(request.getKeyName(), parentUserId, request.getPermission());
         DBHelper.getApiKeyDao().persist(key);
         return key;
@@ -153,8 +154,8 @@ public class AuthenticationService {
      * @param password New password that should be set.
      * @return {@link User} if the change was successful.
      */
-    public static User updateUserPasswordById(String userId, String password) {
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
+    public static User updateUserPasswordById(UUID userId, String password) {
+        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId.toString());
         if (user == null) throw new NotFoundException("user_not_existing");
         user.updatePassword(password);
         DBHelper.getUserDao().update(user);
@@ -167,9 +168,9 @@ public class AuthenticationService {
      * @param userId Id of the {@link User} that should be deleted.
      * @return {@link Response} containing an empty array and status 200 if the operation was successful.
      */
-    public static Response deleteUser(User authenticatedUser, String userId) {
+    public static Response deleteUser(User authenticatedUser, UUID userId) {
         if (userId.equals(authenticatedUser.getId())) throw new BadRequestException("cant_delete_own_user");
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
+        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId.toString());
         if (user == null) throw new NotFoundException("user_not_existing");
         try {
             DBHelper.getSessionDao().removeAllSessionsOfUser(user.getId());

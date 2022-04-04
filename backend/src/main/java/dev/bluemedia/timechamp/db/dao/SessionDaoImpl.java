@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * DAO to access and manipulate {@link Session} objects.
@@ -74,8 +75,8 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @param parentUserId Id of the user whose keys should be retrieved.
      * @return List of {@link Session} objects which belong to the specified user.
      */
-    public List<Session> getByParentUser(String parentUserId) {
-        return getAllByAttributeMatch("parentUserId", parentUserId);
+    public List<Session> getByParentUser(UUID parentUserId) {
+        return getAllByAttributeMatch("parentUserId", parentUserId.toString());
     }
 
     /**
@@ -99,8 +100,8 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @param parentUserId Id of the user whose keys should be removed.
      * @throws SQLException Exception thrown when an error occurs during deletion.
      */
-    public void removeAllSessionsOfUser(String parentUserId) throws SQLException {
-        List<Session> sessionsToDelete = getAllByAttributeMatch("parentUserId", parentUserId);
+    public void removeAllSessionsOfUser(UUID parentUserId) throws SQLException {
+        List<Session> sessionsToDelete = getAllByAttributeMatch("parentUserId", parentUserId.toString());
         dao.delete(sessionsToDelete);
         for (Session session : sessionsToDelete) {
             sessionCache.remove(session.getSessionKey());
