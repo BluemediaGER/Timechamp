@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Oliver Traber
  */
-@ApplicationPath("/api/*")
+@ApplicationPath("/api/v1/*")
 public class RestApplication extends ResourceConfig {
 
     /** SLF4J logger for usage in this class */

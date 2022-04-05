@@ -97,7 +97,7 @@ public class JettyServer {
 
         // Create the servlet that handles the rest api
         ServletHolder jerseyServlet = new ServletHolder(new ServletContainer(new RestApplication()));
-        srvCtxHandler.addServlet(jerseyServlet, "/api/*");
+        srvCtxHandler.addServlet(jerseyServlet, "/api/v1/*");
 
         // Lastly, the default servlet for serving frontend files.
         // It is important that this is last.
