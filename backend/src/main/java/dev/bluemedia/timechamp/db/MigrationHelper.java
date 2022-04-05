@@ -42,7 +42,7 @@ public class MigrationHelper {
         if (DBHelper.getMetadataDao().countOf() == 0) {
             long latestSchemaVersion = getMigrationFileVersion(getLatestMigration());
             DBHelper.getMetadataDao().persist(
-                    new DbMetadata(UUID.randomUUID().toString(), latestSchemaVersion, LocalDateTime.now())
+                    new DbMetadata(UUID.randomUUID(), latestSchemaVersion, LocalDateTime.now())
             );
             return;
         }
@@ -58,7 +58,7 @@ public class MigrationHelper {
                 try {
                     runMigration(migrationFile);
                     DBHelper.getMetadataDao().persist(
-                            new DbMetadata(UUID.randomUUID().toString(), i, LocalDateTime.now())
+                            new DbMetadata(UUID.randomUUID(), i, LocalDateTime.now())
                     );
                 } catch (Exception ex) {
                     LOG.error(String.format("Fatal error while migrating database. " +

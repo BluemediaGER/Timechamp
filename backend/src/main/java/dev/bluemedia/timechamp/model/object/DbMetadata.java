@@ -5,12 +5,13 @@ import com.j256.ormlite.table.DatabaseTable;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @DatabaseTable(tableName = "meta")
 public class DbMetadata {
 
     @DatabaseField(id = true)
-    private String id;
+    private UUID id;
 
     @DatabaseField
     private long schemaVersion;
@@ -20,13 +21,13 @@ public class DbMetadata {
 
     private DbMetadata() {}
 
-    public DbMetadata(String id, long schemaVersion, LocalDateTime migrationDate) {
+    public DbMetadata(UUID id, long schemaVersion, LocalDateTime migrationDate) {
         this.id = id;
         this.schemaVersion = schemaVersion;
         this.migrationDate = Timestamp.valueOf(migrationDate);
     }
 
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
