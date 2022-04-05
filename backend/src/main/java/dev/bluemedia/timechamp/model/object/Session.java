@@ -3,6 +3,7 @@ package dev.bluemedia.timechamp.model.object;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
 import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.util.RandomString;
 
@@ -15,6 +16,7 @@ import java.util.UUID;
  *
  * @author Oliver Traber
  */
+@DatabaseTable(tableName = "sessions")
 public class Session {
 
     /** Instance of the {@link RandomString} used to generate the session keys */
