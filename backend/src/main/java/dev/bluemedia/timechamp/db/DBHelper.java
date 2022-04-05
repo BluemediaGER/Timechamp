@@ -4,14 +4,8 @@ import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
-import dev.bluemedia.timechamp.db.dao.ApiKeyDaoImpl;
-import dev.bluemedia.timechamp.db.dao.DbMetadataDaoImpl;
-import dev.bluemedia.timechamp.db.dao.SessionDaoImpl;
-import dev.bluemedia.timechamp.db.dao.UserDaoImpl;
-import dev.bluemedia.timechamp.model.object.ApiKey;
-import dev.bluemedia.timechamp.model.object.DbMetadata;
-import dev.bluemedia.timechamp.model.object.Session;
-import dev.bluemedia.timechamp.model.object.User;
+import dev.bluemedia.timechamp.db.dao.*;
+import dev.bluemedia.timechamp.model.object.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +35,9 @@ public class DBHelper {
 
     /** {@link SessionDaoImpl} used to persist {@link Session} objects to the database */
     private static SessionDaoImpl sessionDao;
+
+    /** {@link TimeEntryDaoImpl} used to persist {@link TimeEntry} objects to the database */
+    private static TimeEntryDaoImpl timeEntryDao;
 
     /**
      * Initialize database connections, tables and DAOs and start migrating the schema to the current version.
@@ -72,6 +69,7 @@ public class DBHelper {
         userDao = new UserDaoImpl(DaoManager.createDao(connectionSource, User.class));
         apiKeyDao = new ApiKeyDaoImpl(DaoManager.createDao(connectionSource, ApiKey.class));
         sessionDao = new SessionDaoImpl(DaoManager.createDao(connectionSource, Session.class));
+        timeEntryDao = new TimeEntryDaoImpl(DaoManager.createDao(connectionSource, TimeEntry.class));
     }
 
     /**
@@ -84,6 +82,7 @@ public class DBHelper {
         TableUtils.createTableIfNotExists(connectionSource, User.class);
         TableUtils.createTableIfNotExists(connectionSource, ApiKey.class);
         TableUtils.createTableIfNotExists(connectionSource, Session.class);
+        TableUtils.createTableIfNotExists(connectionSource, TimeEntry.class);
     }
 
     /** Close the database connections */
@@ -127,5 +126,13 @@ public class DBHelper {
      */
     public static SessionDaoImpl getSessionDao() {
         return sessionDao;
+    }
+
+    /**
+     * Get the {@link TimeEntryDaoImpl} used to persist {@link TimeEntry} objects to the database.
+     * @return {@link TimeEntryDaoImpl} used to persist {@link TimeEntry} objects to the database.
+     */
+    public static TimeEntryDaoImpl getTimeEntryDao() {
+        return timeEntryDao;
     }
 }
