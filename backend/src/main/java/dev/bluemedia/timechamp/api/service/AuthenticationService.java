@@ -39,17 +39,15 @@ public class AuthenticationService {
      * Validate the credentials send by the client.
      * @param username Username that was sent by the client.
      * @param password Password that was sent by the client.
-     * @return true if the supplied credentials are correct, otherwise false.
+     * @return User object matching the supplied credentials, or null otherwise.
      */
-    public static boolean validateCredentials(String username, String password) {
+    public static User validateCredentials(String username, String password) {
         User user = DBHelper.getUserDao().getByAttributeMatch("username", username);
-        if (user == null) return false;
+        if (user == null) return null;
         if (user.validatePassword(password)) {
-            user.resetLastLoginTime();
-            DBHelper.getUserDao().update(user);
-            return true;
+            return user;
         }
-        return false;
+        return null;
     }
 
     /**
@@ -60,6 +58,8 @@ public class AuthenticationService {
         Capabilities uaCaps = parser.parse(rawUserAgent);
         String userAgent = uaCaps.getBrowser() + " on " + uaCaps.getPlatform();
         User user = DBHelper.getUserDao().getByAttributeMatch("username", username);
+        user.resetLastLoginTime();
+        DBHelper.getUserDao().update(user);
         Session session = new Session(user.getId(), userAgent, clientIp);
         DBHelper.getSessionDao().persist(session);
         return session.getSessionKey();

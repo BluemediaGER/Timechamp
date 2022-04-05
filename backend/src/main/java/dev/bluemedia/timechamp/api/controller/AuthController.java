@@ -2,6 +2,7 @@ package dev.bluemedia.timechamp.api.controller;
 
 import dev.bluemedia.timechamp.api.anotation.RequireAuthentication;
 import dev.bluemedia.timechamp.api.anotation.RequirePermission;
+import dev.bluemedia.timechamp.api.exception.GenericException;
 import dev.bluemedia.timechamp.api.service.AuthenticationService;
 import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.model.object.ApiKey;
@@ -57,29 +58,35 @@ public class AuthController {
         if (ConfigUtil.getConfig().isBehindReverseProxy()) {
             clientIp = sr.getHeader("X-Real-IP");
         }
-        if (!AuthenticationService.validateCredentials(username, password)) {
-            LOG.warn("Login failed from IP {} using username {}. Reason: Invalid credentials", clientIp, username);
-            return Response
-                    .status(Response.Status.UNAUTHORIZED)
-                    .entity("{\"error\":\"invalid_credentials\"}")
-                    .build();
-        }
-        String sessionKey = AuthenticationService.issueSession(username, sr.getHeader("User-Agent"), clientIp);
-        try {
-            String cookieHostname = httpHeaders.getRequestHeader("host").get(0);
-            // Remove port from host header
-            final Pattern portPattern = Pattern.compile(":[0-9]+");
-            cookieHostname = portPattern.matcher(cookieHostname).replaceAll("");
+        User user = AuthenticationService.validateCredentials(username, password);
+        if (user != null) {
+            String sessionKey = AuthenticationService.issueSession(username, sr.getHeader("User-Agent"), clientIp);
+            try {
+                String cookieHostname = httpHeaders.getRequestHeader("host").get(0);
+                // Remove port from host header
+                final Pattern portPattern = Pattern.compile(":[0-9]+");
+                cookieHostname = portPattern.matcher(cookieHostname).replaceAll("");
 
-            return Response
-                    .ok()
-                    .entity(DBHelper.getUserDao().getByAttributeMatch("username", username))
-                    .cookie(new NewCookie(new Cookie("tsess", sessionKey, "/", cookieHostname)))
-                    .build();
-        } catch (Exception e) {
-            e.printStackTrace();
+                return Response
+                        .ok()
+                        .entity(DBHelper.getUserDao().getByAttributeMatch("username", username))
+                        .cookie(new NewCookie(new Cookie("tsess", sessionKey, "/", cookieHostname)))
+                        .build();
+            } catch (Exception ex) {
+                LOG.error("Failed to create session cookie for user {}", username, ex);
+                throw new GenericException(
+                        Response.Status.INTERNAL_SERVER_ERROR,
+                        "internal_server_error",
+                        "create_session_failed"
+                );
+            }
         }
-        return null;
+
+        LOG.warn("Login failed from IP {} using username {}. Reason: Invalid credentials", clientIp, username);
+        return Response
+                .status(Response.Status.UNAUTHORIZED)
+                .entity("{\"error\":\"invalid_credentials\"}")
+                .build();
     }
 
     /**
