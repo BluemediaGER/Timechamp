@@ -97,7 +97,7 @@ public class ApiKey {
 
     @JsonIgnore
     public User getParentUser() {
-        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId.toString());
+        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId);
     }
 
     /**

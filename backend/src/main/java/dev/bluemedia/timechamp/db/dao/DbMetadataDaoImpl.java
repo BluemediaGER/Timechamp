@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.util.UUID;
 
 /**
  * DAO to access and manipulate {@link DbMetadata} objects.
@@ -21,7 +22,7 @@ public class DbMetadataDaoImpl extends GenericDao<DbMetadata> {
      * Default constructor to instantiate this class.
      * @param dao {@link Dao} that should be used for database operations.
      */
-    public DbMetadataDaoImpl(Dao<DbMetadata, String> dao) {
+    public DbMetadataDaoImpl(Dao<DbMetadata, UUID> dao) {
         super(dao);
     }
 

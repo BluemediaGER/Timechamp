@@ -70,7 +70,7 @@ public class UserController {
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public User getUser(@PathParam("id") UUID userId) {
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId.toString());
+        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
         if (user == null) throw new NotFoundException("user_not_found");
         return user;
     }
@@ -111,7 +111,7 @@ public class UserController {
         if (authenticatedUser.getId().equals(userId)) {
             throw new BadRequestException("cant_change_own_permission");
         }
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId.toString());
+        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
         if (user == null) throw new NotFoundException("user_not_found");
         user.updatePermission(permissionUpdateRequest.getPermission());
         DBHelper.getUserDao().update(user);

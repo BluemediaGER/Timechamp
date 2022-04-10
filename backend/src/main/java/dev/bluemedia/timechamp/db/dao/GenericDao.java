@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class GenericDao<T> {
 
@@ -15,13 +16,13 @@ public class GenericDao<T> {
     private static final Logger LOG = LoggerFactory.getLogger(GenericDao.class.getName());
 
     /** {@link Dao} that should be used for database operations */
-    protected Dao<T, String> dao;
+    protected Dao<T, UUID> dao;
 
     /**
      * Default constructor to instantiate this class.
      * @param dao {@link Dao} that should be used for database operations.
      */
-    public GenericDao(Dao<T, String> dao) {
+    public GenericDao(Dao<T, UUID> dao) {
         this.dao = dao;
     }
 
@@ -79,8 +80,8 @@ public class GenericDao<T> {
      * Retrieve an single object from the local database using any attribute.
      * @return Instance of the found, or null if no entry could be found.
      */
-    public T getByAttributeMatch(String attributeName, String attributeValue) {
-        QueryBuilder<T, String> queryBuilder = dao.queryBuilder();
+    public <E> T getByAttributeMatch(String attributeName, E attributeValue) {
+        QueryBuilder<T, UUID> queryBuilder = dao.queryBuilder();
         try {
             queryBuilder.where().eq(attributeName, attributeValue);
             List<T> results = dao.query(queryBuilder.prepare());
@@ -99,8 +100,8 @@ public class GenericDao<T> {
      * Retrieve all matching objects from the local database using any attribute.
      * @return Instance of the found, or null if no entry could be found.
      */
-    public List<T> getAllByAttributeMatch(String attributeName, String attributeValue) {
-        QueryBuilder<T, String> queryBuilder = dao.queryBuilder();
+    public <E> List<T> getAllByAttributeMatch(String attributeName, E attributeValue) {
+        QueryBuilder<T, UUID> queryBuilder = dao.queryBuilder();
         try {
             queryBuilder.where().eq(attributeName, attributeValue);
             List<T> results = dao.query(queryBuilder.prepare());
@@ -119,7 +120,7 @@ public class GenericDao<T> {
      * Get an QueryBuilder instance from the DAO.
      * @return QueryBuilder instance from the DAO.
      */
-    public QueryBuilder<T, String> getQueryBuilder() {
+    public QueryBuilder<T, UUID> getQueryBuilder() {
         return dao.queryBuilder();
     }
 
@@ -128,7 +129,7 @@ public class GenericDao<T> {
      * @param queryBuilder Query the found objects must match.
      * @return List of results matching the given query.
      */
-    public List<T> query(QueryBuilder<T, String> queryBuilder) {
+    public List<T> query(QueryBuilder<T, UUID> queryBuilder) {
         try {
             return dao.query(queryBuilder.prepare());
         } catch (SQLException ex) {

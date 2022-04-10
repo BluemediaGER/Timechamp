@@ -69,7 +69,7 @@ public class AuthController {
 
                 return Response
                         .ok()
-                        .entity(DBHelper.getUserDao().getByAttributeMatch("username", username))
+                        .entity(user)
                         .cookie(new NewCookie(new Cookie("tsess", sessionKey, "/", cookieHostname)))
                         .build();
             } catch (Exception ex) {

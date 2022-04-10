@@ -28,7 +28,7 @@ public class SessionDaoImpl extends GenericDao<Session> {
      *
      * @param dao {@link Dao} that should be used for database operations.
      */
-    public SessionDaoImpl(Dao<Session, String> dao) {
+    public SessionDaoImpl(Dao<Session, UUID> dao) {
         super(dao);
     }
 
@@ -76,7 +76,7 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @return List of {@link Session} objects which belong to the specified user.
      */
     public List<Session> getByParentUser(UUID parentUserId) {
-        return getAllByAttributeMatch("parentUserId", parentUserId.toString());
+        return getAllByAttributeMatch("parentUserId", parentUserId);
     }
 
     /**
@@ -101,7 +101,7 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @throws SQLException Exception thrown when an error occurs during deletion.
      */
     public void removeAllSessionsOfUser(UUID parentUserId) throws SQLException {
-        List<Session> sessionsToDelete = getAllByAttributeMatch("parentUserId", parentUserId.toString());
+        List<Session> sessionsToDelete = getAllByAttributeMatch("parentUserId", parentUserId);
         dao.delete(sessionsToDelete);
         for (Session session : sessionsToDelete) {
             sessionCache.remove(session.getSessionKey());

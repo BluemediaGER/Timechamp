@@ -3,6 +3,8 @@ package dev.bluemedia.timechamp.db.dao;
 import com.j256.ormlite.dao.Dao;
 import dev.bluemedia.timechamp.model.object.User;
 
+import java.util.UUID;
+
 /**
  * DAO to access and manipulate {@link User} objects.
  *
@@ -15,7 +17,7 @@ public class UserDaoImpl extends GenericDao<User> {
      *
      * @param dao {@link Dao} that should be used for database operations.
      */
-    public UserDaoImpl(Dao<User, String> dao) {
+    public UserDaoImpl(Dao<User, UUID> dao) {
         super(dao);
     }
 }

@@ -19,7 +19,7 @@ public class ApiKeyDaoImpl extends GenericDao<ApiKey> {
      *
      * @param dao {@link Dao} that should be used for database operations.
      */
-    public ApiKeyDaoImpl(Dao<ApiKey, String> dao) {
+    public ApiKeyDaoImpl(Dao<ApiKey, UUID> dao) {
         super(dao);
     }
 
@@ -29,7 +29,7 @@ public class ApiKeyDaoImpl extends GenericDao<ApiKey> {
      * @return List of {@link ApiKey} objects which belong to the specified user.
      */
     public List<ApiKey> getByParentUser(UUID parentUserId) {
-        return getAllByAttributeMatch("parentUserId", parentUserId.toString());
+        return getAllByAttributeMatch("parentUserId", parentUserId);
     }
 
     /**
@@ -38,7 +38,7 @@ public class ApiKeyDaoImpl extends GenericDao<ApiKey> {
      * @throws SQLException Exception thrown when an error occurs during deletion.
      */
     public void removeAllKeysOfUser(UUID parentUserId) throws SQLException {
-        List<ApiKey> keysToDelete = getAllByAttributeMatch("parentUserId", parentUserId.toString());
+        List<ApiKey> keysToDelete = getAllByAttributeMatch("parentUserId", parentUserId);
         dao.delete(keysToDelete);
     }
 

@@ -87,7 +87,7 @@ public class AuthSessionController {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User authenticatedUser = (User) context.getProperty("userFromFilter");
 
-        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId.toString());
+        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId);
         if (session == null) throw new NotFoundException("session_not_found");
 
         // Allow principals with MANAGE permission to read sessions of other users
@@ -111,7 +111,7 @@ public class AuthSessionController {
     public Response deleteSession(@PathParam("id") UUID sessionId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
-        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId.toString());
+        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId);
         if (session == null) throw new NotFoundException("session_not_found");
         // Allow principals with MANAGE permission to delete sessions of other users
         if (!session.getParentUserId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {

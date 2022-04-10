@@ -89,7 +89,7 @@ public class AuthApiKeyController {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
 
-        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId.toString());
+        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId);
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
         // Allow principals with MANAGE permission to read API keys of other users
@@ -153,7 +153,7 @@ public class AuthApiKeyController {
                 throw new BadRequestException("cant_change_own_permission");
             }
         }
-        ApiKey key = DBHelper.getApiKeyDao().getByAttributeMatch("id", keyId.toString());
+        ApiKey key = DBHelper.getApiKeyDao().getByAttributeMatch("id", keyId);
         if (key == null) throw new NotFoundException("apikey_not_found");
         if (!key.getParentUserId().equals(parentUser.getId())) throw new NotFoundException("apikey_not_found");
         // Don't allow users to create API keys with MANAGE permissions,
@@ -187,7 +187,7 @@ public class AuthApiKeyController {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
 
-        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId.toString());
+        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId);
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
         // Allow principals with MANAGE permission to delete API keys of other users

@@ -155,7 +155,7 @@ public class AuthenticationService {
      * @return {@link User} if the change was successful.
      */
     public static User updateUserPasswordById(UUID userId, String password) {
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId.toString());
+        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
         if (user == null) throw new NotFoundException("user_not_existing");
         user.updatePassword(password);
         DBHelper.getUserDao().update(user);
@@ -170,7 +170,7 @@ public class AuthenticationService {
      */
     public static Response deleteUser(User authenticatedUser, UUID userId) {
         if (userId.equals(authenticatedUser.getId())) throw new BadRequestException("cant_delete_own_user");
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId.toString());
+        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
         if (user == null) throw new NotFoundException("user_not_existing");
         try {
             DBHelper.getSessionDao().removeAllSessionsOfUser(user.getId());
