@@ -60,7 +60,7 @@ public class AuthenticationService {
         User user = DBHelper.getUserDao().getByAttributeMatch("username", username);
         user.resetLastLoginTime();
         DBHelper.getUserDao().update(user);
-        Session session = new Session(user.getId(), userAgent, clientIp);
+        Session session = new Session(user, userAgent, clientIp);
         DBHelper.getSessionDao().persist(session);
         return session.getSessionKey();
     }
@@ -94,8 +94,8 @@ public class AuthenticationService {
      * Create a new {@link ApiKey} and persist it in the database.
      * @return Generated {@link ApiKey}.
      */
-    public static ApiKey createApiKey(UUID parentUserId, ApiKeyCreateRequest request) {
-        ApiKey key = new ApiKey(request.getKeyName(), parentUserId, request.getPermission());
+    public static ApiKey createApiKey(User parentUser, ApiKeyCreateRequest request) {
+        ApiKey key = new ApiKey(request.getKeyName(), parentUser, request.getPermission());
         DBHelper.getApiKeyDao().persist(key);
         return key;
     }
@@ -155,7 +155,7 @@ public class AuthenticationService {
      * @return {@link User} if the change was successful.
      */
     public static User updateUserPasswordById(UUID userId, String password) {
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
+        User user = DBHelper.getUserDao().get(userId);
         if (user == null) throw new NotFoundException("user_not_existing");
         user.updatePassword(password);
         DBHelper.getUserDao().update(user);
@@ -170,11 +170,11 @@ public class AuthenticationService {
      */
     public static Response deleteUser(User authenticatedUser, UUID userId) {
         if (userId.equals(authenticatedUser.getId())) throw new BadRequestException("cant_delete_own_user");
-        User user = DBHelper.getUserDao().getByAttributeMatch("id", userId);
+        User user = DBHelper.getUserDao().get(userId);
         if (user == null) throw new NotFoundException("user_not_existing");
         try {
-            DBHelper.getSessionDao().removeAllSessionsOfUser(user.getId());
-            DBHelper.getApiKeyDao().removeAllKeysOfUser(user.getId());
+            DBHelper.getSessionDao().removeAllSessionsOfUser(user);
+            DBHelper.getApiKeyDao().removeAllKeysOfUser(user);
         } catch (SQLException ex) {
             // Do nothing
         }

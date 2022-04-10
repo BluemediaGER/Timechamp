@@ -13,7 +13,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,38 +38,43 @@ public class AuthSessionController {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Session> getSessions(@QueryParam("user") UUID managedUserId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
-        User authenticatedUser = (User) context.getProperty("userFromFilter");
 
         // Allow principals with MANAGE permission to impersonate other users
-        UUID userId = authenticatedUser.getId();
+        User user = (User) context.getProperty("userFromFilter");
         if (requestPermission == Permission.MANAGE && managedUserId != null) {
-            userId = managedUserId;
+            User managedUser = DBHelper.getUserDao().get(managedUserId);
+            if (managedUser == null) {
+                throw new NotFoundException("user_not_found");
+            }
+            user = managedUser;
         }
 
-        return DBHelper.getSessionDao().getByParentUser(userId);
+        return DBHelper.getSessionDao().getByParentUser(user);
     }
 
     /**
      * Delete all sessions of the currently logged-in user.
      * @param managedUserId Optional user id to allow users with MANAGE privileges to impersonate other users.
      * @return Empty array if all sessions were deleted.
-     * @throws SQLException Exception thrown if a database error occurs during deletion.
      */
     @DELETE
     @RequireAuthentication
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteSessions(@QueryParam("user") UUID managedUserId) throws SQLException {
+    public Response deleteSessions(@QueryParam("user") UUID managedUserId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
-        User authenticatedUser = (User) context.getProperty("userFromFilter");
 
         // Allow principals with MANAGE permission to impersonate other users
-        UUID userId = authenticatedUser.getId();
+        User user = (User) context.getProperty("userFromFilter");
         if (requestPermission == Permission.MANAGE && managedUserId != null) {
-            userId = managedUserId;
+            User managedUser = DBHelper.getUserDao().get(managedUserId);
+            if (managedUser == null) {
+                throw new NotFoundException("user_not_found");
+            }
+            user = managedUser;
         }
 
-        DBHelper.getSessionDao().removeAllSessionsOfUser(userId);
+        DBHelper.getSessionDao().removeAllSessionsOfUser(user);
         return Response.ok().entity("[]").build();
     }
 
@@ -87,11 +91,11 @@ public class AuthSessionController {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User authenticatedUser = (User) context.getProperty("userFromFilter");
 
-        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId);
+        Session session = DBHelper.getSessionDao().get(sessionId);
         if (session == null) throw new NotFoundException("session_not_found");
 
         // Allow principals with MANAGE permission to read sessions of other users
-        if (!session.getParentUserId().equals(authenticatedUser.getId()) && requestPermission != Permission.MANAGE) {
+        if (!session.getParentUser().getId().equals(authenticatedUser.getId()) && requestPermission != Permission.MANAGE) {
             throw new NotFoundException("session_not_found");
         }
 
@@ -111,12 +115,15 @@ public class AuthSessionController {
     public Response deleteSession(@PathParam("id") UUID sessionId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
-        Session session = DBHelper.getSessionDao().getByAttributeMatch("id", sessionId);
+
+        Session session = DBHelper.getSessionDao().get(sessionId);
         if (session == null) throw new NotFoundException("session_not_found");
+
         // Allow principals with MANAGE permission to delete sessions of other users
-        if (!session.getParentUserId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
+        if (!session.getParentUser().getId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
             throw new NotFoundException("session_not_found");
         }
+
         DBHelper.getSessionDao().delete(session);
         return Response.ok().entity("[]").build();
     }

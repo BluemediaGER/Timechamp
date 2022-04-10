@@ -34,9 +34,9 @@ public class ApiKey {
     private String keyName;
 
     /** Id of the user this key belongs to */
-    @DatabaseField
+    @DatabaseField(columnName = "parentUser", foreign = true, canBeNull = false, index = true)
     @JsonIgnore
-    private UUID parentUserId;
+    private User parentUser;
 
     /** Key used by the client to authenticate itself */
     @DatabaseField
@@ -54,10 +54,10 @@ public class ApiKey {
     /**
      * Create an new instance and generate an random key id and an random authentication key.
      */
-    public ApiKey(String keyName, UUID parentUserId, Permission permission) {
+    public ApiKey(String keyName, User parentUser, Permission permission) {
         this.id = UUID.randomUUID();
         this.keyName = keyName;
-        this.parentUserId = parentUserId;
+        this.parentUser = parentUser;
         this.authenticationKey = random.nextString();
         this.lastAccessTime = Timestamp.valueOf(LocalDateTime.now());
         this.permission = permission;
@@ -87,17 +87,12 @@ public class ApiKey {
     }
 
     /**
-     * Get the id of the user this api key belongs to.
-     * @return The id of the user this key belongs to.
+     * Get the user this api key belongs to.
+     * @return The user this key belongs to.
      */
     @JsonIgnore
-    public UUID getParentUserId() {
-        return parentUserId;
-    }
-
-    @JsonIgnore
     public User getParentUser() {
-        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId);
+        return parentUser;
     }
 
     /**

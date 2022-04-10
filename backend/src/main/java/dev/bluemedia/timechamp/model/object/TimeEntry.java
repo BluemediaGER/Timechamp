@@ -18,9 +18,9 @@ public class TimeEntry {
     @DatabaseField(id = true)
     private UUID id;
 
-    @DatabaseField(index = true)
+    @DatabaseField(columnName = "parentUser", foreign = true, canBeNull = false, index = true)
     @JsonIgnore
-    private UUID parentUser;
+    private User parentUser;
 
     @DatabaseField(index = true)
     private Timestamp startTime;
@@ -39,7 +39,7 @@ public class TimeEntry {
 
     private TimeEntry() {}
 
-    public TimeEntry(UUID parentUser, TimeEntryType type) {
+    public TimeEntry(User parentUser, TimeEntryType type) {
         this.id = UUID.randomUUID();
         this.parentUser = parentUser;
         this.type = type;
@@ -50,7 +50,7 @@ public class TimeEntry {
     }
 
     @JsonIgnore
-    public UUID getParentUser() {
+    public User getParentUser() {
         return parentUser;
     }
 

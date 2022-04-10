@@ -63,6 +63,20 @@ public class GenericDao<T> {
     }
 
     /**
+     * Get an object from the database using its ID.
+     * @param id ID of the object that should be retrieved.
+     * @return Object that was retrieved from the database, or null if no object could be found.
+     */
+    public T get(UUID id) {
+        try {
+            return dao.queryForId(id);
+        } catch (SQLException ex) {
+            LOG.error("An unexpected error occurred", ex);
+            return null;
+        }
+    }
+
+    /**
      * Retrieve all objects that are contained in the database.
      * @return List of objects that are currently stored in the database.
      */
@@ -136,6 +150,20 @@ public class GenericDao<T> {
             LOG.error("An unexpected error occurred", ex);
         }
         return new ArrayList<>();
+    }
+
+    /**
+     * Fill missing fields in lazy loaded objects.
+     * @param object Object that should be filled.
+     * @return Object with filled values.
+     */
+    public T refresh(T object) {
+        try {
+            dao.refresh(object);
+        } catch (SQLException ex) {
+            LOG.error("An unexpected error occurred", ex);
+        }
+        return object;
     }
 
     /**

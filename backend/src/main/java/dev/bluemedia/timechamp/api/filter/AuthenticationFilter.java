@@ -2,6 +2,7 @@ package dev.bluemedia.timechamp.api.filter;
 
 import dev.bluemedia.timechamp.api.anotation.RequireAuthentication;
 import dev.bluemedia.timechamp.api.service.AuthenticationService;
+import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.model.object.ApiKey;
 import dev.bluemedia.timechamp.model.object.Session;
 import dev.bluemedia.timechamp.model.object.User;
@@ -64,9 +65,8 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
         Session trySession = AuthenticationService.validateSession(sessCookie.getValue());
         if (trySession != null) {
-            User user = trySession.getParentUser();
-            context.setProperty("userFromFilter", user);
-            context.setProperty("permission", user.getPermission());
+            context.setProperty("userFromFilter", trySession.getParentUser());
+            context.setProperty("permission", trySession.getPermission());
         } else {
             abort(context, "Session cookie invalid or expired");
         }

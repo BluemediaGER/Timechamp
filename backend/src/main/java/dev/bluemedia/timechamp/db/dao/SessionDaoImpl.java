@@ -2,6 +2,7 @@ package dev.bluemedia.timechamp.db.dao;
 
 import com.j256.ormlite.dao.Dao;
 import dev.bluemedia.timechamp.model.object.Session;
+import dev.bluemedia.timechamp.model.object.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,11 +73,11 @@ public class SessionDaoImpl extends GenericDao<Session> {
 
     /**
      * Get all {@link Session} objects that belong to the specified user.
-     * @param parentUserId Id of the user whose keys should be retrieved.
+     * @param parentUser Id of the user whose keys should be retrieved.
      * @return List of {@link Session} objects which belong to the specified user.
      */
-    public List<Session> getByParentUser(UUID parentUserId) {
-        return getAllByAttributeMatch("parentUserId", parentUserId);
+    public List<Session> getByParentUser(User parentUser) {
+        return getAllByAttributeMatch("parentUser", parentUser);
     }
 
     /**
@@ -97,14 +98,17 @@ public class SessionDaoImpl extends GenericDao<Session> {
 
     /**
      * Remove all {@link Session} objects that belong to the specified user.
-     * @param parentUserId Id of the user whose keys should be removed.
-     * @throws SQLException Exception thrown when an error occurs during deletion.
+     * @param parentUser User whose sessions should be removed.
      */
-    public void removeAllSessionsOfUser(UUID parentUserId) throws SQLException {
-        List<Session> sessionsToDelete = getAllByAttributeMatch("parentUserId", parentUserId);
-        dao.delete(sessionsToDelete);
-        for (Session session : sessionsToDelete) {
-            sessionCache.remove(session.getSessionKey());
+    public void removeAllSessionsOfUser(User parentUser) {
+        List<Session> sessionsToDelete = getAllByAttributeMatch("parentUser", parentUser);
+        try {
+            dao.delete(sessionsToDelete);
+            for (Session session : sessionsToDelete) {
+                sessionCache.remove(session.getSessionKey());
+            }
+        } catch (SQLException ex) {
+            LOG.error("An unexpected error occurred", ex);
         }
     }
 

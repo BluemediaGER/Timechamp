@@ -51,7 +51,7 @@ public class AuthApiKeyController {
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
-        ApiKey key = AuthenticationService.createApiKey(parentUser.getId(), createRequest);
+        ApiKey key = AuthenticationService.createApiKey(parentUser, createRequest);
         return Response.created(null).entity(key).build();
     }
 
@@ -65,15 +65,18 @@ public class AuthApiKeyController {
     @Produces(MediaType.APPLICATION_JSON)
     public List<ApiKey> getApiKeys(@QueryParam("user") UUID managedUserId) {
         Permission requestPermission = (Permission) context.getProperty("permission");
-        User authenticatedUser = (User) context.getProperty("userFromFilter");
 
         // Allow principals with MANAGE permission to impersonate other users
-        UUID userId = authenticatedUser.getId();
+        User user = (User) context.getProperty("userFromFilter");
         if (requestPermission == Permission.MANAGE && managedUserId != null) {
-            userId = managedUserId;
+            User managedUser = DBHelper.getUserDao().get(managedUserId);
+            if (managedUser == null) {
+                throw new NotFoundException("user_not_found");
+            }
+            user = managedUser;
         }
 
-        return DBHelper.getApiKeyDao().getByParentUser(userId);
+        return DBHelper.getApiKeyDao().getByParentUser(user);
     }
 
     /**
@@ -89,11 +92,11 @@ public class AuthApiKeyController {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
 
-        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId);
+        ApiKey apiKey = DBHelper.getApiKeyDao().get(apiKeyId);
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
         // Allow principals with MANAGE permission to read API keys of other users
-        if (!apiKey.getParentUserId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
+        if (!apiKey.getParentUser().getId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
             throw new NotFoundException("apikey_not_found");
         }
 
@@ -146,6 +149,7 @@ public class AuthApiKeyController {
                                            @PathParam("id") UUID keyId,
                                            @Valid PermissionUpdateRequest permissionUpdateRequest) {
         User parentUser = (User) context.getProperty("userFromFilter");
+        DBHelper.getUserDao().refresh(parentUser);
         // Prevent api key from changing its own permission
         if(authorizationHeader != null) {
             ApiKey requestingKey = AuthenticationService.getApiKey(authorizationHeader);
@@ -153,9 +157,9 @@ public class AuthApiKeyController {
                 throw new BadRequestException("cant_change_own_permission");
             }
         }
-        ApiKey key = DBHelper.getApiKeyDao().getByAttributeMatch("id", keyId);
+        ApiKey key = DBHelper.getApiKeyDao().get(keyId);
         if (key == null) throw new NotFoundException("apikey_not_found");
-        if (!key.getParentUserId().equals(parentUser.getId())) throw new NotFoundException("apikey_not_found");
+        if (!key.getParentUser().getId().equals(parentUser.getId())) throw new NotFoundException("apikey_not_found");
         // Don't allow users to create API keys with MANAGE permissions,
         // if they do not have MANAGE permissions themselves.
         if (permissionUpdateRequest.getPermission() == Permission.MANAGE &&
@@ -187,11 +191,11 @@ public class AuthApiKeyController {
         Permission requestPermission = (Permission) context.getProperty("permission");
         User parentUser = (User) context.getProperty("userFromFilter");
 
-        ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("id", apiKeyId);
+        ApiKey apiKey = DBHelper.getApiKeyDao().get(apiKeyId);
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
         // Allow principals with MANAGE permission to delete API keys of other users
-        if (!apiKey.getParentUserId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
+        if (!apiKey.getParentUser().getId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
             throw new NotFoundException("apikey_not_found");
         }
 

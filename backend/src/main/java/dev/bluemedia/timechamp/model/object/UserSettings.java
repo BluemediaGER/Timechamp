@@ -16,9 +16,9 @@ public class UserSettings {
     private UUID id;
 
     /** Username of the user */
-    @DatabaseField
+    @DatabaseField(columnName = "parentUser", foreign = true, canBeNull = false, index = true)
     @JsonIgnore
-    private UUID parentUser;
+    private User parentUser;
 
     private float hoursMonday;
     private float hoursTuesday;

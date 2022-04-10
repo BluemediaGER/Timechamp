@@ -2,6 +2,7 @@ package dev.bluemedia.timechamp.db.dao;
 
 import com.j256.ormlite.dao.Dao;
 import dev.bluemedia.timechamp.model.object.ApiKey;
+import dev.bluemedia.timechamp.model.object.User;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -25,20 +26,20 @@ public class ApiKeyDaoImpl extends GenericDao<ApiKey> {
 
     /**
      * Get all {@link ApiKey} objects that belong to the specified user.
-     * @param parentUserId Id of the user whose keys should be retrieved.
+     * @param parentUser User whose keys should be retrieved.
      * @return List of {@link ApiKey} objects which belong to the specified user.
      */
-    public List<ApiKey> getByParentUser(UUID parentUserId) {
-        return getAllByAttributeMatch("parentUserId", parentUserId);
+    public List<ApiKey> getByParentUser(User parentUser) {
+        return getAllByAttributeMatch("parentUser", parentUser);
     }
 
     /**
      * Remove all {@link ApiKey} objects that belong to the specified user.
-     * @param parentUserId Id of the user whose keys should be removed.
+     * @param parentUser User whose keys should be removed.
      * @throws SQLException Exception thrown when an error occurs during deletion.
      */
-    public void removeAllKeysOfUser(UUID parentUserId) throws SQLException {
-        List<ApiKey> keysToDelete = getAllByAttributeMatch("parentUserId", parentUserId);
+    public void removeAllKeysOfUser(User parentUser) throws SQLException {
+        List<ApiKey> keysToDelete = getAllByAttributeMatch("parentUser", parentUser);
         dao.delete(keysToDelete);
     }
 

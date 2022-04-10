@@ -124,6 +124,7 @@ public class AuthController {
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateUserPassword(@Valid PasswordUpdateRequest passwordUpdateRequest) {
         User user = (User) context.getProperty("userFromFilter");
+        DBHelper.getUserDao().refresh(user);
         // Prevent API key with lower privileges from resetting the password of a user with higher privileges.
         ApiKey apiKey = (ApiKey) context.getProperty("apiKeyFromFilter");
         if (apiKey != null) {

@@ -1,8 +1,6 @@
 package dev.bluemedia.timechamp.api.filter;
 
 import dev.bluemedia.timechamp.api.anotation.RequirePermission;
-import dev.bluemedia.timechamp.model.object.ApiKey;
-import dev.bluemedia.timechamp.model.object.User;
 import dev.bluemedia.timechamp.model.type.Permission;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;
@@ -45,17 +43,9 @@ public class PermissionFilter implements ContainerRequestFilter {
             RequirePermission annotation = method.getAnnotation(RequirePermission.class);
             List<Permission> allowedPermissions = Arrays.asList(annotation.value());
 
-            // Check if authentication uses an API key
-            if (context.getProperty("apiKeyFromFilter") != null) {
-                ApiKey key = (ApiKey) context.getProperty("apiKeyFromFilter");
-                if (allowedPermissions.contains(key.getPermission())) return;
-            }
-
-            // Check if authentication uses a session
-            if (context.getProperty("userFromFilter") != null) {
-                User user = (User) context.getProperty("userFromFilter");
-                if (allowedPermissions.contains(user.getPermission())) return;
-            }
+            // Check permissions and allow access if permissions are sufficient
+            Permission permission = (Permission) context.getProperty("permission");
+            if (allowedPermissions.contains(permission)) return;
 
             // Fail permission check as default
             abort(context);

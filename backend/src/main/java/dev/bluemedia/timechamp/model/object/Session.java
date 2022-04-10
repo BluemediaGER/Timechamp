@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 import dev.bluemedia.timechamp.db.DBHelper;
+import dev.bluemedia.timechamp.model.type.Permission;
 import dev.bluemedia.timechamp.util.RandomString;
 
 import java.sql.Timestamp;
@@ -37,10 +38,15 @@ public class Session {
     @JsonIgnore
     private String sessionKey;
 
-    /** Id of the {@link User} this {@link Session} was created for */
+    /** {@link User} this {@link Session} was created for */
+    @DatabaseField(columnName = "parentUser", foreign = true, canBeNull = false, index = true)
+    @JsonIgnore
+    private User parentUser;
+
+    /** {@link Permission} of the parent {@link User} for faster access */
     @DatabaseField
     @JsonIgnore
-    private UUID parentUserId;
+    private Permission permission;
 
     /** Human friendly user agent string that created the session */
     @DatabaseField
@@ -60,11 +66,12 @@ public class Session {
     /**
      * Create an new instance and generate an random session id and an random session key.
      */
-    public Session(UUID parentUserId, String userAgent, String clientIP) {
+    public Session(User parentUser, String userAgent, String clientIP) {
         this.id = UUID.randomUUID();
         this.sessionKey = random.nextString();
         this.lastAccessTime = Timestamp.valueOf(LocalDateTime.now());
-        this.parentUserId = parentUserId;
+        this.parentUser = parentUser;
+        this.permission = parentUser.getPermission();
         this.userAgent = userAgent;
         this.lastAccessIpAddress = clientIP;
     }
@@ -96,21 +103,21 @@ public class Session {
     }
 
     /**
-     * Get the id of the parent {@link User} of the session.
-     * @return Id of the parent {@link User} of the session.
-     */
-    @JsonIgnore
-    public UUID getParentUserId() {
-        return parentUserId;
-    }
-
-    /**
-     * Get the parent user object from the database.
-     * @return Parent user.
+     * Get the parent {@link User} of the session.
+     * @return Parent {@link User} of the session.
      */
     @JsonIgnore
     public User getParentUser() {
-        return DBHelper.getUserDao().getByAttributeMatch("id", parentUserId);
+        return parentUser;
+    }
+
+    /**
+     * Get the {@link Permission} of the parent {@link User} of the session.
+     * @return {@link Permission} of the parent {@link User} of the session.
+     */
+    @JsonIgnore
+    public Permission getPermission() {
+        return permission;
     }
 
     /**
