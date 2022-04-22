@@ -83,7 +83,7 @@ public class JettyServer {
         URL webRootLocation = JettyServer.class.getResource("/static/index.html");
         if (webRootLocation == null) {
             LOG.warn("Unable to determine frontend location in JAR file. " +
-                    "This may be ok, if you are running the backend without a packaged frontend.");
+                    "This may be okay, if you are running the backend without a packaged frontend.");
         } else {
             // Resolve file to directory
             URI webRootUri = URI.create(
