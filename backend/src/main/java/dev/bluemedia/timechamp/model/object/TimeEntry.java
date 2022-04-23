@@ -1,6 +1,8 @@
 package dev.bluemedia.timechamp.model.object;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 import dev.bluemedia.timechamp.db.persister.DurationPersister;
@@ -23,18 +25,22 @@ public class TimeEntry {
     private User parentUser;
 
     @DatabaseField(index = true)
+    @JsonIgnore
     private Timestamp startTime;
 
     @DatabaseField
+    @JsonIgnore
     private Timestamp endTime;
 
     @DatabaseField(persisterClass = DurationPersister.class)
+    @JsonIgnore
     private Duration worktime;
 
     @DatabaseField(persisterClass = TimeEntryTypePersister.class)
     private TimeEntryType type;
 
     @DatabaseField
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String description;
 
     private TimeEntry() {}
@@ -54,14 +60,19 @@ public class TimeEntry {
         return parentUser;
     }
 
+    @JsonProperty("startTime")
     public LocalDateTime getStartTime() {
         return startTime.toLocalDateTime();
     }
 
+    @JsonProperty("endTime")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public LocalDateTime getEndTime() {
         return endTime.toLocalDateTime();
     }
 
+    @JsonProperty("worktime")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public Duration getWorktime() {
         return worktime;
     }
@@ -70,6 +81,7 @@ public class TimeEntry {
         return type;
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public String getDescription() {
         return description;
     }
@@ -86,6 +98,7 @@ public class TimeEntry {
         this.worktime = worktime;
     }
 
+    @JsonIgnore
     public void calculateWorktime() {
         if (startTime != null && endTime != null) {
             this.worktime = Duration.between(startTime.toInstant(), endTime.toInstant());
