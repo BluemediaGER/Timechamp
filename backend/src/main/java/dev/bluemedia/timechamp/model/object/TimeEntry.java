@@ -6,10 +6,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 import dev.bluemedia.timechamp.db.persister.DurationPersister;
+import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
 import dev.bluemedia.timechamp.db.persister.TimeEntryTypePersister;
 import dev.bluemedia.timechamp.model.type.TimeEntryType;
 
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -24,13 +24,13 @@ public class TimeEntry {
     @JsonIgnore
     private User parentUser;
 
-    @DatabaseField(index = true)
+    @DatabaseField(index = true, persisterClass = LocalDateTimePersister.class)
     @JsonIgnore
-    private Timestamp startTime;
+    private LocalDateTime startTime;
 
-    @DatabaseField
+    @DatabaseField(persisterClass = LocalDateTimePersister.class)
     @JsonIgnore
-    private Timestamp endTime;
+    private LocalDateTime endTime;
 
     @DatabaseField(persisterClass = DurationPersister.class)
     @JsonIgnore
@@ -62,13 +62,13 @@ public class TimeEntry {
 
     @JsonProperty("startTime")
     public LocalDateTime getStartTime() {
-        return startTime.toLocalDateTime();
+        return startTime;
     }
 
     @JsonProperty("endTime")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public LocalDateTime getEndTime() {
-        return endTime.toLocalDateTime();
+        return endTime;
     }
 
     @JsonProperty("worktime")
@@ -87,11 +87,11 @@ public class TimeEntry {
     }
 
     public void setStartTime(LocalDateTime startTime) {
-        this.startTime = Timestamp.valueOf(startTime);
+        this.startTime = startTime;
     }
 
     public void setEndTime(LocalDateTime endTime) {
-        this.endTime = Timestamp.valueOf(endTime);
+        this.endTime = endTime;
     }
 
     public void setWorktime(Duration worktime) {
@@ -101,7 +101,7 @@ public class TimeEntry {
     @JsonIgnore
     public void calculateWorktime() {
         if (startTime != null && endTime != null) {
-            this.worktime = Duration.between(startTime.toInstant(), endTime.toInstant());
+            this.worktime = Duration.between(startTime, endTime);
         }
     }
 
