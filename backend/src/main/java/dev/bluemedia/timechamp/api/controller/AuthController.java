@@ -75,6 +75,7 @@ public class AuthController {
                         .cookie(
                                 new NewCookie.Builder("tsess")
                                         .value(sessionKey)
+                                        .path("/")
                                         .expiry(Date.from(Instant.now().plus(90, ChronoUnit.DAYS)))
                                         .build()
                         ).build();
@@ -109,7 +110,7 @@ public class AuthController {
         return Response
                 .ok()
                 .entity("[]")
-                .cookie(new NewCookie.Builder("tsess").maxAge(0).build())
+                .cookie(new NewCookie.Builder("tsess").path("/").maxAge(0).build())
                 .build();
     }
 

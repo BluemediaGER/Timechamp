@@ -97,7 +97,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         context.abortWith(
                 Response
                         .status(Response.Status.UNAUTHORIZED)
-                        .cookie(new NewCookie.Builder("tsess").maxAge(0).build())
+                        .cookie(new NewCookie.Builder("tsess").path("/").maxAge(0).build())
                         .entity("{\"error\":\"not_authenticated\"}")
                         .type(MediaType.APPLICATION_JSON)
                         .build()
