@@ -24,18 +24,22 @@ public class TimeEntryDaoImpl extends GenericDao<TimeEntry> {
         super(dao);
     }
 
-    public TimeEntry getActiveTimeEntry(User user) {
-        try {
-            List<TimeEntry> results = dao.queryBuilder().where()
-                    .eq("parentUser", user.getId())
-                    .and()
-                    .isNull("endTime")
-                    .query();
-            if (results.size() > 0) {
-                return results.get(0);
-            }
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
+    public TimeEntry get(User parentUser, UUID id) throws SQLException {
+        return dao.queryBuilder().where()
+                .eq("parentUser", parentUser.getId())
+                .and()
+                .eq("id", id)
+                .queryForFirst();
+    }
+
+    public TimeEntry getActiveTimeEntry(User user) throws SQLException {
+        List<TimeEntry> results = dao.queryBuilder().where()
+                .eq("parentUser", user.getId())
+                .and()
+                .isNull("endTime")
+                .query();
+        if (results.size() > 0) {
+            return results.get(0);
         }
         return null;
     }

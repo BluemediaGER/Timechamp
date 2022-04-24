@@ -128,6 +128,14 @@ public class Session {
         this.lastAccessTime = Timestamp.valueOf(LocalDateTime.now());
     }
 
+    /**
+     * Set the ip address last used to gain access using this session.
+     * @param lastAccessIpAddress IP address last used to gain access using this session.
+     */
+    public void setLastAccessIpAddress(String lastAccessIpAddress) {
+        this.lastAccessIpAddress = lastAccessIpAddress;
+    }
+
     public String getUserAgent() {
         return userAgent;
     }

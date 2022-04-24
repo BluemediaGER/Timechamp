@@ -11,6 +11,8 @@ import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
+
 /**
  * Main class for Timechamp. Perform initialisation of all components and launches the application afterwards.
  *
@@ -24,7 +26,7 @@ public class TimechampApplication {
     /** Global Quartz scheduler used to schedule sync tasks */
     private static Scheduler quartzScheduler;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
         // Add shutdown hook to cleanly shut down the application
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             LOG.info("Performing clean shutdown");

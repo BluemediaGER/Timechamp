@@ -10,6 +10,8 @@ import dev.bluemedia.timechamp.model.object.User;
 import dev.bluemedia.timechamp.model.request.PasswordUpdateRequest;
 import dev.bluemedia.timechamp.model.type.Permission;
 import dev.bluemedia.timechamp.util.ConfigUtil;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -19,7 +21,10 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.regex.Pattern;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 
 /**
  * REST controller used to handle all related tasks related to authentication.
@@ -32,10 +37,6 @@ public class AuthController {
     /** SLF4J logger for usage in this class */
     private static final Logger LOG = LoggerFactory.getLogger(AuthController.class.getName());
 
-    /** Injected {@link HttpHeaders} used to get the hostname used to set cookies on the client */
-    @Context
-    private HttpHeaders httpHeaders;
-
     /** Injected {@link HttpServletRequest} used to log the clients ip address in case the login fails */
     @Context
     private HttpServletRequest sr;
@@ -43,6 +44,12 @@ public class AuthController {
     /** Injected {@link ContainerRequestContext} used to access identity information from filters */
     @Context
     private ContainerRequestContext context;
+
+    @Inject
+    private Provider<User> contextUser;
+
+    @Inject
+    private Provider<Permission> contextPermission;
 
     /**
      * Method used by a frontend to obtain a new session.
@@ -53,7 +60,7 @@ public class AuthController {
     @Path("/login")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response login(@FormDataParam("username") String username, @FormDataParam("password") String password) {
+    public Response login(@FormDataParam("username") String username, @FormDataParam("password") String password) throws SQLException {
         String clientIp = sr.getRemoteAddr();
         if (ConfigUtil.getConfig().isBehindReverseProxy()) {
             clientIp = sr.getHeader("X-Real-IP");
@@ -62,16 +69,15 @@ public class AuthController {
         if (user != null) {
             String sessionKey = AuthenticationService.issueSession(username, sr.getHeader("User-Agent"), clientIp);
             try {
-                String cookieHostname = httpHeaders.getRequestHeader("host").get(0);
-                // Remove port from host header
-                final Pattern portPattern = Pattern.compile(":[0-9]+");
-                cookieHostname = portPattern.matcher(cookieHostname).replaceAll("");
-
                 return Response
                         .ok()
                         .entity(user)
-                        .cookie(new NewCookie(new Cookie("tsess", sessionKey, "/", cookieHostname)))
-                        .build();
+                        .cookie(
+                                new NewCookie.Builder("tsess")
+                                        .value(sessionKey)
+                                        .expiry(Date.from(Instant.now().plus(90, ChronoUnit.DAYS)))
+                                        .build()
+                        ).build();
             } catch (Exception ex) {
                 LOG.error("Failed to create session cookie for user {}", username, ex);
                 throw new GenericException(
@@ -98,16 +104,12 @@ public class AuthController {
     @RequireAuthentication
     @Path("/logout")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response logout(@CookieParam("tsess") Cookie sessionCookie) {
+    public Response logout(@CookieParam("tsess") Cookie sessionCookie) throws SQLException {
         if (sessionCookie != null) AuthenticationService.invalidateSession(sessionCookie.getValue());
-        String cookieHostname = httpHeaders.getRequestHeader("host").get(0);
-        // Remove port from host header
-        final Pattern portPattern = Pattern.compile(":[0-9]+");
-        cookieHostname = portPattern.matcher(cookieHostname).replaceAll("");
         return Response
                 .ok()
                 .entity("[]")
-                .cookie(new NewCookie(new Cookie("tsess", "", "/", cookieHostname)))
+                .cookie(new NewCookie.Builder("tsess").maxAge(0).build())
                 .build();
     }
 
@@ -122,8 +124,8 @@ public class AuthController {
     @Path("/password")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateUserPassword(@Valid PasswordUpdateRequest passwordUpdateRequest) {
-        User user = (User) context.getProperty("userFromFilter");
+    public Response updateUserPassword(@Valid PasswordUpdateRequest passwordUpdateRequest) throws SQLException {
+        User user = contextUser.get();
         DBHelper.getUserDao().refresh(user);
         // Prevent API key with lower privileges from resetting the password of a user with higher privileges.
         ApiKey apiKey = (ApiKey) context.getProperty("apiKeyFromFilter");

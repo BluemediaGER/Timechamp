@@ -7,12 +7,15 @@ import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.model.object.Session;
 import dev.bluemedia.timechamp.model.object.User;
 import dev.bluemedia.timechamp.model.type.Permission;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,9 +27,11 @@ import java.util.UUID;
 @Path("/auth/session")
 public class AuthSessionController {
 
-    /** Injected {@link ContainerRequestContext} used to access identity information from filters */
-    @Context
-    private ContainerRequestContext context;
+    @Inject
+    private Provider<User> contextUser;
+
+    @Inject
+    private Provider<Permission> contextPermission;
 
     /**
      * Get all sessions of the currently logged-in user.
@@ -36,17 +41,17 @@ public class AuthSessionController {
     @GET
     @RequireAuthentication
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Session> getSessions(@QueryParam("user") UUID managedUserId) {
-        Permission requestPermission = (Permission) context.getProperty("permission");
-
+    public List<Session> getSessions(@QueryParam("user") UUID managedUserId) throws SQLException {
         // Allow principals with MANAGE permission to impersonate other users
-        User user = (User) context.getProperty("userFromFilter");
-        if (requestPermission == Permission.MANAGE && managedUserId != null) {
+        User user;
+        if (contextPermission.get() == Permission.MANAGE && managedUserId != null) {
             User managedUser = DBHelper.getUserDao().get(managedUserId);
             if (managedUser == null) {
                 throw new NotFoundException("user_not_found");
             }
             user = managedUser;
+        } else {
+            user = contextUser.get();
         }
 
         return DBHelper.getSessionDao().getByParentUser(user);
@@ -61,17 +66,17 @@ public class AuthSessionController {
     @RequireAuthentication
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteSessions(@QueryParam("user") UUID managedUserId) {
-        Permission requestPermission = (Permission) context.getProperty("permission");
-
+    public Response deleteSessions(@QueryParam("user") UUID managedUserId) throws SQLException {
         // Allow principals with MANAGE permission to impersonate other users
-        User user = (User) context.getProperty("userFromFilter");
-        if (requestPermission == Permission.MANAGE && managedUserId != null) {
+        User user;
+        if (contextPermission.get() == Permission.MANAGE && managedUserId != null) {
             User managedUser = DBHelper.getUserDao().get(managedUserId);
             if (managedUser == null) {
                 throw new NotFoundException("user_not_found");
             }
             user = managedUser;
+        } else {
+            user = contextUser.get();
         }
 
         DBHelper.getSessionDao().removeAllSessionsOfUser(user);
@@ -88,14 +93,12 @@ public class AuthSessionController {
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Session getSession(@PathParam("id") UUID sessionId) {
-        Permission requestPermission = (Permission) context.getProperty("permission");
-        User authenticatedUser = (User) context.getProperty("userFromFilter");
-
         Session session = DBHelper.getSessionDao().get(sessionId);
         if (session == null) throw new NotFoundException("session_not_found");
 
         // Allow principals with MANAGE permission to read sessions of other users
-        if (!session.getParentUser().getId().equals(authenticatedUser.getId()) && requestPermission != Permission.MANAGE) {
+        if (!session.getParentUser().getId().equals(contextUser.get().getId())
+                && contextPermission.get() != Permission.MANAGE) {
             throw new NotFoundException("session_not_found");
         }
 
@@ -113,14 +116,12 @@ public class AuthSessionController {
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteSession(@PathParam("id") UUID sessionId) {
-        Permission requestPermission = (Permission) context.getProperty("permission");
-        User parentUser = (User) context.getProperty("userFromFilter");
-
         Session session = DBHelper.getSessionDao().get(sessionId);
         if (session == null) throw new NotFoundException("session_not_found");
 
         // Allow principals with MANAGE permission to delete sessions of other users
-        if (!session.getParentUser().getId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
+        if (!session.getParentUser().getId().equals(contextUser.get().getId())
+                && contextPermission.get() != Permission.MANAGE) {
             throw new NotFoundException("session_not_found");
         }
 

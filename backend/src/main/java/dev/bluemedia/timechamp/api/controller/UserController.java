@@ -10,6 +10,8 @@ import dev.bluemedia.timechamp.model.request.PasswordUpdateRequest;
 import dev.bluemedia.timechamp.model.request.PermissionUpdateRequest;
 import dev.bluemedia.timechamp.model.request.UserCreateRequest;
 import dev.bluemedia.timechamp.model.type.Permission;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -17,6 +19,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,6 +35,9 @@ public class UserController {
     @Context
     private ContainerRequestContext context;
 
+    @Inject
+    private Provider<User> contextUser;
+
     /**
      * Create a new {@link User} in the database.
      * @param request {@link UserCreateRequest} containing the details for the new user.
@@ -42,7 +48,7 @@ public class UserController {
     @RequirePermission(Permission.MANAGE)
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createUser(@Valid UserCreateRequest request) {
+    public Response createUser(@Valid UserCreateRequest request) throws SQLException {
         User user = AuthenticationService.createUser(request);
         return Response.created(null).entity(user).build();
     }
@@ -88,7 +94,7 @@ public class UserController {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public User updateUserPassword(@PathParam("id") UUID userId,
-                                   @Valid PasswordUpdateRequest passwordUpdateRequest) {
+                                   @Valid PasswordUpdateRequest passwordUpdateRequest) throws SQLException {
         return AuthenticationService.updateUserPasswordById(userId, passwordUpdateRequest.getPassword());
     }
 
@@ -105,10 +111,9 @@ public class UserController {
     @Path("/{id}/permission")
     @Produces(MediaType.APPLICATION_JSON)
     public User updateUserPermission(@PathParam("id") UUID userId,
-                                     @Valid PermissionUpdateRequest permissionUpdateRequest) {
-        User authenticatedUser = (User) context.getProperty("userFromFilter");
+                                     @Valid PermissionUpdateRequest permissionUpdateRequest) throws SQLException {
         // Prevent users from changing their own permissions
-        if (authenticatedUser.getId().equals(userId)) {
+        if (contextUser.get().getId().equals(userId)) {
             throw new BadRequestException("cant_change_own_permission");
         }
         User user = DBHelper.getUserDao().get(userId);
@@ -129,9 +134,8 @@ public class UserController {
     @RequirePermission(Permission.MANAGE)
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteUser(@PathParam("id") UUID userId) {
-        User authenticatedUser = (User) context.getProperty("userFromFilter");
-        return AuthenticationService.deleteUser(authenticatedUser, userId);
+    public Response deleteUser(@PathParam("id") UUID userId) throws SQLException {
+        return AuthenticationService.deleteUser(contextUser.get(), userId);
     }
 
 }

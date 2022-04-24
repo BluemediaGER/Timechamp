@@ -30,7 +30,7 @@ public class GenericDao<T> {
      * Save an object to the database.
      * @param object Object that should be saved to the database.
      */
-    public void persist(T object) {
+    public void persist(T object) throws SQLException {
         try {
             dao.create(object);
         } catch (SQLException ex) {
@@ -42,7 +42,7 @@ public class GenericDao<T> {
      * Update an object in the database.
      * @param object Object that should be updated.
      */
-    public void update(T object) {
+    public void update(T object) throws SQLException {
         try {
             dao.update(object);
         } catch (SQLException ex) {
@@ -94,40 +94,30 @@ public class GenericDao<T> {
      * Retrieve an single object from the local database using any attribute.
      * @return Instance of the found, or null if no entry could be found.
      */
-    public <E> T getByAttributeMatch(String attributeName, E attributeValue) {
+    public <E> T getByAttributeMatch(String attributeName, E attributeValue) throws SQLException {
         QueryBuilder<T, UUID> queryBuilder = dao.queryBuilder();
-        try {
-            queryBuilder.where().eq(attributeName, attributeValue);
-            List<T> results = dao.query(queryBuilder.prepare());
-            if (results.size() == 0) {
-                return null;
-            } else {
-                return results.get(0);
-            }
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
+        queryBuilder.where().eq(attributeName, attributeValue);
+        List<T> results = dao.query(queryBuilder.prepare());
+        if (results.size() == 0) {
+            return null;
+        } else {
+            return results.get(0);
         }
-        return null;
     }
 
     /**
      * Retrieve all matching objects from the local database using any attribute.
      * @return Instance of the found, or null if no entry could be found.
      */
-    public <E> List<T> getAllByAttributeMatch(String attributeName, E attributeValue) {
+    public <E> List<T> getAllByAttributeMatch(String attributeName, E attributeValue) throws SQLException {
         QueryBuilder<T, UUID> queryBuilder = dao.queryBuilder();
-        try {
-            queryBuilder.where().eq(attributeName, attributeValue);
-            List<T> results = dao.query(queryBuilder.prepare());
-            if (results.size() == 0) {
-                return new ArrayList<>();
-            } else {
-                return results;
-            }
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
+        queryBuilder.where().eq(attributeName, attributeValue);
+        List<T> results = dao.query(queryBuilder.prepare());
+        if (results.size() == 0) {
+            return new ArrayList<>();
+        } else {
+            return results;
         }
-        return null;
     }
 
     /**
@@ -143,13 +133,8 @@ public class GenericDao<T> {
      * @param queryBuilder Query the found objects must match.
      * @return List of results matching the given query.
      */
-    public List<T> query(QueryBuilder<T, UUID> queryBuilder) {
-        try {
-            return dao.query(queryBuilder.prepare());
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
-        return new ArrayList<>();
+    public List<T> query(QueryBuilder<T, UUID> queryBuilder) throws SQLException {
+        return dao.query(queryBuilder.prepare());
     }
 
     /**
@@ -157,12 +142,8 @@ public class GenericDao<T> {
      * @param object Object that should be filled.
      * @return Object with filled values.
      */
-    public T refresh(T object) {
-        try {
-            dao.refresh(object);
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
+    public T refresh(T object) throws SQLException {
+        dao.refresh(object);
         return object;
     }
 
@@ -170,13 +151,8 @@ public class GenericDao<T> {
      * Get the count of all objects currently persisted in the database.
      * @return Count of all objects currently persisted in the database.
      */
-    public long countOf() {
-        try {
-            return dao.countOf();
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
-        return 0;
+    public long countOf() throws SQLException {
+        return dao.countOf();
     }
 
 }

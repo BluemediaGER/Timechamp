@@ -29,7 +29,7 @@ public class ApiKeyDaoImpl extends GenericDao<ApiKey> {
      * @param parentUser User whose keys should be retrieved.
      * @return List of {@link ApiKey} objects which belong to the specified user.
      */
-    public List<ApiKey> getByParentUser(User parentUser) {
+    public List<ApiKey> getByParentUser(User parentUser) throws SQLException {
         return getAllByAttributeMatch("parentUser", parentUser);
     }
 

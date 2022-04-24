@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -29,7 +30,8 @@ public class AuthenticationService {
     private static UserAgentParser parser;
     static {
         try {
-            parser = new UserAgentService().loadParser(Arrays.asList(BrowsCapField.DEVICE_NAME, BrowsCapField.BROWSER, BrowsCapField.PLATFORM));
+            parser = new UserAgentService().loadParser(
+                    Arrays.asList(BrowsCapField.DEVICE_NAME, BrowsCapField.BROWSER, BrowsCapField.PLATFORM));
         } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
@@ -41,7 +43,7 @@ public class AuthenticationService {
      * @param password Password that was sent by the client.
      * @return User object matching the supplied credentials, or null otherwise.
      */
-    public static User validateCredentials(String username, String password) {
+    public static User validateCredentials(String username, String password) throws SQLException {
         User user = DBHelper.getUserDao().getByAttributeMatch("username", username);
         if (user == null) return null;
         if (user.validatePassword(password)) {
@@ -54,7 +56,7 @@ public class AuthenticationService {
      * Issue a new {@link Session} and persist it in the database.
      * @return Session key used by the client to identify itself.
      */
-    public static String issueSession(String username, String rawUserAgent, String clientIp) {
+    public static String issueSession(String username, String rawUserAgent, String clientIp) throws SQLException {
         Capabilities uaCaps = parser.parse(rawUserAgent);
         String userAgent = uaCaps.getBrowser() + " on " + uaCaps.getPlatform();
         User user = DBHelper.getUserDao().getByAttributeMatch("username", username);
@@ -70,12 +72,18 @@ public class AuthenticationService {
      * @param sessionKey Session key that should be validated.
      * @return true if the session key is valid, otherwise false.
      */
-    public static Session validateSession(String sessionKey) {
+    public static Session validateSession(String sessionKey, String clientIp) throws SQLException {
         if (sessionKey == null) return null;
-        Session session = DBHelper.getSessionDao().getByAttributeMatch("sessionKey", sessionKey);
+        Session session = DBHelper.getSessionDao().getBySessionKey(sessionKey);
         if (session == null) return null;
-        session.resetLasAccessTime();
-        DBHelper.getSessionDao().update(session);
+        // Only update session in the database if client IP has changed
+        // or if the session has not been updated in the last five minutes.
+        if (session.getLastAccessTime().isBefore(LocalDateTime.now().minusMinutes(5)) ||
+                !session.getLastAccessIpAddress().equals(clientIp)) {
+            session.resetLasAccessTime();
+            session.setLastAccessIpAddress(clientIp);
+            DBHelper.getSessionDao().update(session);
+        }
         return session;
     }
 
@@ -83,8 +91,8 @@ public class AuthenticationService {
      * Invalidate the given session key and remove the corresponding {@link Session} from the database.
      * @param sessionKey Session key of the session that should be invalidated.
      */
-    public static void invalidateSession(String sessionKey) {
-        Session session = DBHelper.getSessionDao().getByAttributeMatch("sessionKey", sessionKey);
+    public static void invalidateSession(String sessionKey) throws SQLException {
+        Session session = DBHelper.getSessionDao().getBySessionKey(sessionKey);
         if (session != null) {
             DBHelper.getSessionDao().delete(session);
         }
@@ -94,7 +102,7 @@ public class AuthenticationService {
      * Create a new {@link ApiKey} and persist it in the database.
      * @return Generated {@link ApiKey}.
      */
-    public static ApiKey createApiKey(User parentUser, ApiKeyCreateRequest request) {
+    public static ApiKey createApiKey(User parentUser, ApiKeyCreateRequest request) throws SQLException {
         ApiKey key = new ApiKey(request.getKeyName(), parentUser, request.getPermission());
         DBHelper.getApiKeyDao().persist(key);
         return key;
@@ -104,7 +112,7 @@ public class AuthenticationService {
      * Get an {@link ApiKey} by it's secret key.
      * @return Retrieved {@link ApiKey}.
      */
-    public static ApiKey getApiKey(String authenticationHeader) {
+    public static ApiKey getApiKey(String authenticationHeader) throws SQLException {
         String authenticationKey = authenticationHeader.replace("Bearer " , "");
         return DBHelper.getApiKeyDao().getByAttributeMatch("authenticationKey", authenticationKey);
     }
@@ -114,7 +122,7 @@ public class AuthenticationService {
      * @param authenticationHeader Authentication HTTP header containing the api key that should be validated.
      * @return true if the api key is valid, otherwise false.
      */
-    public static ApiKey validateApiKey(String authenticationHeader) {
+    public static ApiKey validateApiKey(String authenticationHeader) throws SQLException {
         if (authenticationHeader == null) return null;
         String authenticationKey = authenticationHeader.replace("Bearer " , "");
         ApiKey apiKey = DBHelper.getApiKeyDao().getByAttributeMatch("authenticationKey", authenticationKey);
@@ -129,7 +137,7 @@ public class AuthenticationService {
      * @param request {@link UserCreateRequest} containing the details for the new user.
      * @return Newly created {@link User}.
      */
-    public static User createUser(UserCreateRequest request) {
+    public static User createUser(UserCreateRequest request) throws SQLException {
         User user = DBHelper.getUserDao().getByAttributeMatch("username", request.getUsername());
         if (user != null) throw new BadRequestException("username_already_existing");
         User newUser = new User(request.getUsername(), request.getPassword(), request.getPermission());
@@ -142,7 +150,7 @@ public class AuthenticationService {
      * @param password New password that should be set.
      * @return {@link User} if the change was successful.
      */
-    public static User updateUserPassword(User user, String password) {
+    public static User updateUserPassword(User user, String password) throws SQLException {
         user.updatePassword(password);
         DBHelper.getUserDao().update(user);
         return user;
@@ -154,7 +162,7 @@ public class AuthenticationService {
      * @param password New password that should be set.
      * @return {@link User} if the change was successful.
      */
-    public static User updateUserPasswordById(UUID userId, String password) {
+    public static User updateUserPasswordById(UUID userId, String password) throws SQLException {
         User user = DBHelper.getUserDao().get(userId);
         if (user == null) throw new NotFoundException("user_not_existing");
         user.updatePassword(password);
@@ -168,16 +176,12 @@ public class AuthenticationService {
      * @param userId Id of the {@link User} that should be deleted.
      * @return {@link Response} containing an empty array and status 200 if the operation was successful.
      */
-    public static Response deleteUser(User authenticatedUser, UUID userId) {
+    public static Response deleteUser(User authenticatedUser, UUID userId) throws SQLException {
         if (userId.equals(authenticatedUser.getId())) throw new BadRequestException("cant_delete_own_user");
         User user = DBHelper.getUserDao().get(userId);
         if (user == null) throw new NotFoundException("user_not_existing");
-        try {
-            DBHelper.getSessionDao().removeAllSessionsOfUser(user);
-            DBHelper.getApiKeyDao().removeAllKeysOfUser(user);
-        } catch (SQLException ex) {
-            // Do nothing
-        }
+        DBHelper.getSessionDao().removeAllSessionsOfUser(user);
+        DBHelper.getApiKeyDao().removeAllKeysOfUser(user);
         DBHelper.getUserDao().delete(user);
         return Response.ok().entity("[]").build();
     }

@@ -38,13 +38,9 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @param object Session that should be saved to the database.
      */
     @Override
-    public void persist(Session object) {
-        try {
-            dao.create(object);
-            sessionCache.put(object.getSessionKey(), object);
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
+    public void persist(Session object) throws SQLException {
+        dao.create(object);
+        sessionCache.put(object.getSessionKey(), object);
     }
 
     /**
@@ -52,13 +48,9 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @param session Session that should be updated.
      */
     @Override
-    public void update(Session session) {
-        try {
-            dao.update(session);
-            sessionCache.put(session.getSessionKey(), session);
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
+    public void update(Session session) throws SQLException {
+        dao.update(session);
+        sessionCache.put(session.getSessionKey(), session);
     }
 
     /**
@@ -76,7 +68,7 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @param parentUser Id of the user whose keys should be retrieved.
      * @return List of {@link Session} objects which belong to the specified user.
      */
-    public List<Session> getByParentUser(User parentUser) {
+    public List<Session> getByParentUser(User parentUser) throws SQLException {
         return getAllByAttributeMatch("parentUser", parentUser);
     }
 
@@ -85,7 +77,7 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @param sessionKey Session key for which the session should be retrieved.
      * @return {@link Session} that matches the given session key, or null if no session with this key exists.
      */
-    public Session getBySessionKey(String sessionKey) {
+    public Session getBySessionKey(String sessionKey) throws SQLException {
         if (sessionCache.containsKey(sessionKey)) {
             return sessionCache.get(sessionKey);
         }
@@ -100,15 +92,11 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * Remove all {@link Session} objects that belong to the specified user.
      * @param parentUser User whose sessions should be removed.
      */
-    public void removeAllSessionsOfUser(User parentUser) {
+    public void removeAllSessionsOfUser(User parentUser) throws SQLException {
         List<Session> sessionsToDelete = getAllByAttributeMatch("parentUser", parentUser);
-        try {
-            dao.delete(sessionsToDelete);
-            for (Session session : sessionsToDelete) {
-                sessionCache.remove(session.getSessionKey());
-            }
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
+        dao.delete(sessionsToDelete);
+        for (Session session : sessionsToDelete) {
+            sessionCache.remove(session.getSessionKey());
         }
     }
 

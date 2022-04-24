@@ -26,17 +26,12 @@ public class DbMetadataDaoImpl extends GenericDao<DbMetadata> {
         super(dao);
     }
 
-    public DbMetadata getLatest() {
-        try {
-            return dao.queryBuilder()
-                    .orderBy("schemaVersion", false)
-                    .limit(1L)
-                    .query()
-                    .get(0);
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
-        return null;
+    public DbMetadata getLatest() throws SQLException {
+        return dao.queryBuilder()
+                .orderBy("schemaVersion", false)
+                .limit(1L)
+                .query()
+                .get(0);
     }
 
     /**

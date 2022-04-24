@@ -10,13 +10,14 @@ import dev.bluemedia.timechamp.model.request.ApiKeyCreateRequest;
 import dev.bluemedia.timechamp.model.request.PermissionUpdateRequest;
 import dev.bluemedia.timechamp.model.type.Permission;
 import dev.bluemedia.timechamp.api.exception.NotFoundException;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,9 +27,11 @@ import java.util.UUID;
 @Path("/auth/api-key")
 public class AuthApiKeyController {
 
-    /** Injected {@link ContainerRequestContext} used to access identity information from filters */
-    @Context
-    private ContainerRequestContext context;
+    @Inject
+    private Provider<User> contextUser;
+
+    @Inject
+    private Provider<Permission> contextPermission;
 
     /**
      * Create a new {@link ApiKey} and store it in the database.
@@ -39,19 +42,17 @@ public class AuthApiKeyController {
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createApiKey(@Valid ApiKeyCreateRequest createRequest) {
-        User parentUser = (User) context.getProperty("userFromFilter");
-        Permission requestPermission = (Permission) context.getProperty("permission");
+    public Response createApiKey(@Valid ApiKeyCreateRequest createRequest) throws SQLException {
         // Don't allow requesting entities to create API keys with MANAGE permissions,
         // if they do not have MANAGE permissions themselves.
-        if (createRequest.getPermission() == Permission.MANAGE && requestPermission != Permission.MANAGE) {
+        if (createRequest.getPermission() == Permission.MANAGE && contextPermission.get() != Permission.MANAGE) {
             return Response
                     .status(Response.Status.FORBIDDEN)
                     .entity("{\"error\":\"insufficient_permissions\"}")
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
-        ApiKey key = AuthenticationService.createApiKey(parentUser, createRequest);
+        ApiKey key = AuthenticationService.createApiKey(contextUser.get(), createRequest);
         return Response.created(null).entity(key).build();
     }
 
@@ -63,17 +64,17 @@ public class AuthApiKeyController {
     @GET
     @RequireAuthentication
     @Produces(MediaType.APPLICATION_JSON)
-    public List<ApiKey> getApiKeys(@QueryParam("user") UUID managedUserId) {
-        Permission requestPermission = (Permission) context.getProperty("permission");
-
+    public List<ApiKey> getApiKeys(@QueryParam("user") UUID managedUserId) throws SQLException {
         // Allow principals with MANAGE permission to impersonate other users
-        User user = (User) context.getProperty("userFromFilter");
-        if (requestPermission == Permission.MANAGE && managedUserId != null) {
+        User user;
+        if (contextPermission.get() == Permission.MANAGE && managedUserId != null) {
             User managedUser = DBHelper.getUserDao().get(managedUserId);
             if (managedUser == null) {
                 throw new NotFoundException("user_not_found");
             }
             user = managedUser;
+        } else {
+            user = contextUser.get();
         }
 
         return DBHelper.getApiKeyDao().getByParentUser(user);
@@ -89,14 +90,12 @@ public class AuthApiKeyController {
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public ApiKey getApiKey(@PathParam("id") UUID apiKeyId) {
-        Permission requestPermission = (Permission) context.getProperty("permission");
-        User parentUser = (User) context.getProperty("userFromFilter");
-
         ApiKey apiKey = DBHelper.getApiKeyDao().get(apiKeyId);
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
         // Allow principals with MANAGE permission to read API keys of other users
-        if (!apiKey.getParentUser().getId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
+        if (!apiKey.getParentUser().getId().equals(contextUser.get().getId())
+                && contextPermission.get() != Permission.MANAGE) {
             throw new NotFoundException("apikey_not_found");
         }
 
@@ -114,11 +113,10 @@ public class AuthApiKeyController {
     @Path("/{id}/secret")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getApiKeySecret(@PathParam("id") UUID keyId) {
-        Permission requestPermission = (Permission) context.getProperty("permission");
         ApiKey key = getApiKey(keyId);
 
         // Prevent API key with READ_WRITE permission from reading secrets of keys with MANAGE permission
-        if (requestPermission == Permission.READ_WRITE && key.getPermission() == Permission.MANAGE) {
+        if (contextPermission.get() == Permission.READ_WRITE && key.getPermission() == Permission.MANAGE) {
             return Response
                     .status(Response.Status.FORBIDDEN)
                     .entity("{\"error\":\"insufficient_permissions\"}")
@@ -147,9 +145,7 @@ public class AuthApiKeyController {
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateApiKeyPermission(@HeaderParam("X-API-Key") String authorizationHeader,
                                            @PathParam("id") UUID keyId,
-                                           @Valid PermissionUpdateRequest permissionUpdateRequest) {
-        User parentUser = (User) context.getProperty("userFromFilter");
-        DBHelper.getUserDao().refresh(parentUser);
+                                           @Valid PermissionUpdateRequest permissionUpdateRequest) throws SQLException {
         // Prevent api key from changing its own permission
         if(authorizationHeader != null) {
             ApiKey requestingKey = AuthenticationService.getApiKey(authorizationHeader);
@@ -159,11 +155,12 @@ public class AuthApiKeyController {
         }
         ApiKey key = DBHelper.getApiKeyDao().get(keyId);
         if (key == null) throw new NotFoundException("apikey_not_found");
-        if (!key.getParentUser().getId().equals(parentUser.getId())) throw new NotFoundException("apikey_not_found");
+        if (!key.getParentUser().getId().equals(contextUser.get().getId()))
+            throw new NotFoundException("apikey_not_found");
         // Don't allow users to create API keys with MANAGE permissions,
         // if they do not have MANAGE permissions themselves.
         if (permissionUpdateRequest.getPermission() == Permission.MANAGE &&
-                parentUser.getPermission() != Permission.MANAGE) {
+                contextPermission.get() != Permission.MANAGE) {
             return Response
                     .status(Response.Status.FORBIDDEN)
                     .entity("{\"error\":\"insufficient_permissions\"}")
@@ -188,14 +185,12 @@ public class AuthApiKeyController {
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteApiKey(@PathParam("id") UUID apiKeyId) {
-        Permission requestPermission = (Permission) context.getProperty("permission");
-        User parentUser = (User) context.getProperty("userFromFilter");
-
         ApiKey apiKey = DBHelper.getApiKeyDao().get(apiKeyId);
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
         // Allow principals with MANAGE permission to delete API keys of other users
-        if (!apiKey.getParentUser().getId().equals(parentUser.getId()) && requestPermission != Permission.MANAGE) {
+        if (!apiKey.getParentUser().getId().equals(contextUser.get().getId())
+                && contextPermission.get() != Permission.MANAGE) {
             throw new NotFoundException("apikey_not_found");
         }
 

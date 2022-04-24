@@ -39,34 +39,39 @@ public class MigrationHelper {
     protected void migrate() {
         // Check if the database is empty. Set empty database to the latest schema version,
         // because ORMLite handles the initialisation of empty databases.
-        if (DBHelper.getMetadataDao().countOf() == 0) {
-            long latestSchemaVersion = getMigrationFileVersion(getLatestMigration());
-            DBHelper.getMetadataDao().persist(
-                    new DbMetadata(UUID.randomUUID(), latestSchemaVersion, LocalDateTime.now())
-            );
-            return;
-        }
-
-        // Get current and latest schema version and migrate if
-        long currentSchemaVersion = DBHelper.getMetadataDao().getLatest().getSchemaVersion();
-        long latestSchemaVersion = getMigrationFileVersion(getLatestMigration());
-        if (currentSchemaVersion < latestSchemaVersion) {
-            LOG.info("The database schema has changed and needs to be updated. " +
-                    "Migration will be performed automatically.");
-            for (long i = currentSchemaVersion + 1; i <= latestSchemaVersion; i++) {
-                String migrationFile = String.format(migrationFilePlaceholder, i);
-                try {
-                    runMigration(migrationFile);
-                    DBHelper.getMetadataDao().persist(
-                            new DbMetadata(UUID.randomUUID(), i, LocalDateTime.now())
-                    );
-                } catch (Exception ex) {
-                    LOG.error(String.format("Fatal error while migrating database. " +
-                            "The error occurred at file %s", migrationFile), ex);
-                    System.exit(1);
-                }
+        try {
+            if (DBHelper.getMetadataDao().countOf() == 0) {
+                long latestSchemaVersion = getMigrationFileVersion(getLatestMigration());
+                DBHelper.getMetadataDao().persist(
+                        new DbMetadata(UUID.randomUUID(), latestSchemaVersion, LocalDateTime.now())
+                );
+                return;
             }
-            LOG.info("Database migration completed successfully.");
+
+            // Get current and latest schema version and migrate if
+            long currentSchemaVersion = DBHelper.getMetadataDao().getLatest().getSchemaVersion();
+            long latestSchemaVersion = getMigrationFileVersion(getLatestMigration());
+            if (currentSchemaVersion < latestSchemaVersion) {
+                LOG.info("The database schema has changed and needs to be updated. " +
+                        "Migration will be performed automatically.");
+                for (long i = currentSchemaVersion + 1; i <= latestSchemaVersion; i++) {
+                    String migrationFile = String.format(migrationFilePlaceholder, i);
+                    try {
+                        runMigration(migrationFile);
+                        DBHelper.getMetadataDao().persist(
+                                new DbMetadata(UUID.randomUUID(), i, LocalDateTime.now())
+                        );
+                    } catch (Exception ex) {
+                        LOG.error(String.format("Fatal error while migrating database. " +
+                                "The error occurred at file %s", migrationFile), ex);
+                        System.exit(1);
+                    }
+                }
+                LOG.info("Database migration completed successfully.");
+            }
+        } catch (SQLException ex) {
+            LOG.error("Fatal error while migrating database.", ex);
+            System.exit(1);
         }
     }
 
@@ -94,18 +99,20 @@ public class MigrationHelper {
             // Check if migration folder resides inside a JAR file or if it's a normal file system path
             Path normalizedMigrationsPath;
             if (migrationsFolderUri.getScheme().equals("jar")) {
-                FileSystem fileSystem = FileSystems.newFileSystem(migrationsFolderUri, Collections.emptyMap());
-                normalizedMigrationsPath = fileSystem.getPath("/migrations");
+                try (FileSystem fileSystem = FileSystems.newFileSystem(migrationsFolderUri, Collections.emptyMap())) {
+                    normalizedMigrationsPath = fileSystem.getPath("/migrations");
+                }
             } else {
                 normalizedMigrationsPath = Paths.get(migrationsFolderUri);
             }
 
             List<String> files = new ArrayList<>();
             // Get all paths to actual files and replace the path, so we get only the file names
-            Stream<Path> migrationPaths = Files.walk(normalizedMigrationsPath, 1).filter(Files::isRegularFile);
-            for (Iterator<Path> it = migrationPaths.iterator(); it.hasNext();) {
-                Path migration = it.next();
-                files.add(migration.toString().replace("/migrations/", ""));
+            try (Stream<Path> migrationPaths = Files.walk(normalizedMigrationsPath, 1).filter(Files::isRegularFile)) {
+                for (Iterator<Path> it = migrationPaths.iterator(); it.hasNext(); ) {
+                    Path migration = it.next();
+                    files.add(migration.toString().replace("/migrations/", ""));
+                }
             }
             // Sort the file list in descending order to normalize differences between the
             // list being built from a normal folder and from a folder inside a JAR file
