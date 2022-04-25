@@ -1,19 +1,15 @@
 package dev.bluemedia.timechamp.db.dao;
 
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.stmt.DeleteBuilder;
 import dev.bluemedia.timechamp.model.object.TimeEntry;
 import dev.bluemedia.timechamp.model.object.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
 public class TimeEntryDaoImpl extends GenericDao<TimeEntry> {
-
-    /** SLF4J logger for usage in this class */
-    private static final Logger LOG = LoggerFactory.getLogger(TimeEntryDaoImpl.class.getName());
 
     /**
      * Default constructor to instantiate this class.
@@ -42,6 +38,12 @@ public class TimeEntryDaoImpl extends GenericDao<TimeEntry> {
             return results.get(0);
         }
         return null;
+    }
+
+    public int removeAllTimeEntriesOfUser(User user) throws SQLException {
+        DeleteBuilder<TimeEntry, UUID> deleteBuilder = dao.deleteBuilder();
+        deleteBuilder.where().eq("parentUser", user.getId());
+        return deleteBuilder.delete();
     }
 
 }

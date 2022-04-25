@@ -59,8 +59,6 @@ public class RestApplication extends ResourceConfig {
             }
         });
         LOG.info("Features and providers registered successfully");
-
-        // Create the default api user if no users exist in the database
         LOG.info("API successfully initialized");
     }
 }

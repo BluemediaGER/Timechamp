@@ -89,7 +89,7 @@ public class AuthApiKeyController {
     @RequireAuthentication
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public ApiKey getApiKey(@PathParam("id") UUID apiKeyId) {
+    public ApiKey getApiKey(@PathParam("id") UUID apiKeyId) throws SQLException {
         ApiKey apiKey = DBHelper.getApiKeyDao().get(apiKeyId);
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 
@@ -112,7 +112,7 @@ public class AuthApiKeyController {
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Path("/{id}/secret")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getApiKeySecret(@PathParam("id") UUID keyId) {
+    public Response getApiKeySecret(@PathParam("id") UUID keyId) throws SQLException {
         ApiKey key = getApiKey(keyId);
 
         // Prevent API key with READ_WRITE permission from reading secrets of keys with MANAGE permission
@@ -184,7 +184,7 @@ public class AuthApiKeyController {
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteApiKey(@PathParam("id") UUID apiKeyId) {
+    public Response deleteApiKey(@PathParam("id") UUID apiKeyId) throws SQLException {
         ApiKey apiKey = DBHelper.getApiKeyDao().get(apiKeyId);
         if (apiKey == null) throw new NotFoundException("apikey_not_found");
 

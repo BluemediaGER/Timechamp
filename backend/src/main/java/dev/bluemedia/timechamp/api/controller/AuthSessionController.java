@@ -92,7 +92,7 @@ public class AuthSessionController {
     @RequireAuthentication
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Session getSession(@PathParam("id") UUID sessionId) {
+    public Session getSession(@PathParam("id") UUID sessionId) throws SQLException {
         Session session = DBHelper.getSessionDao().get(sessionId);
         if (session == null) throw new NotFoundException("session_not_found");
 
@@ -115,7 +115,7 @@ public class AuthSessionController {
     @RequirePermission({Permission.READ_WRITE, Permission.MANAGE})
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteSession(@PathParam("id") UUID sessionId) {
+    public Response deleteSession(@PathParam("id") UUID sessionId) throws SQLException {
         Session session = DBHelper.getSessionDao().get(sessionId);
         if (session == null) throw new NotFoundException("session_not_found");
 

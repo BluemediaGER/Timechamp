@@ -3,8 +3,6 @@ package dev.bluemedia.timechamp.db.dao;
 import com.j256.ormlite.dao.Dao;
 import dev.bluemedia.timechamp.model.object.Session;
 import dev.bluemedia.timechamp.model.object.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -18,9 +16,6 @@ import java.util.UUID;
  * @author Oliver Traber
  */
 public class SessionDaoImpl extends GenericDao<Session> {
-
-    /** SLF4J logger for usage in this class */
-    private static final Logger LOG = LoggerFactory.getLogger(SessionDaoImpl.class.getName());
 
     private final Map<String, Session> sessionCache = new HashMap<>();
 
@@ -58,7 +53,7 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * @param session Session that should be deleted from the database.
      */
     @Override
-    public void delete(Session session) {
+    public void delete(Session session) throws SQLException {
         super.delete(session);
         sessionCache.remove(session.getSessionKey());
     }
@@ -92,12 +87,13 @@ public class SessionDaoImpl extends GenericDao<Session> {
      * Remove all {@link Session} objects that belong to the specified user.
      * @param parentUser User whose sessions should be removed.
      */
-    public void removeAllSessionsOfUser(User parentUser) throws SQLException {
+    public int removeAllSessionsOfUser(User parentUser) throws SQLException {
         List<Session> sessionsToDelete = getAllByAttributeMatch("parentUser", parentUser);
         dao.delete(sessionsToDelete);
         for (Session session : sessionsToDelete) {
             sessionCache.remove(session.getSessionKey());
         }
+        return sessionsToDelete.size();
     }
 
 }

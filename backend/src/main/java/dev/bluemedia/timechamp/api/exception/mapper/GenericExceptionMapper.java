@@ -9,9 +9,6 @@ import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 /**
  * {@link ExceptionMapper} implementation used to map any {@link Exception} to a response.
  *

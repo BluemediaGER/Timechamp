@@ -2,6 +2,7 @@ package dev.bluemedia.timechamp;
 
 import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.model.object.User;
+import dev.bluemedia.timechamp.model.object.UserSettings;
 import dev.bluemedia.timechamp.model.type.Permission;
 import dev.bluemedia.timechamp.util.ConfigUtil;
 import dev.bluemedia.timechamp.util.JettyServer;
@@ -49,7 +50,9 @@ public class TimechampApplication {
             String username = "timechamp";
             String passwordSymbols = RandomString.UPPER_CASE + RandomString.LOWER_CASE + RandomString.DIGITS;
             String password = new RandomString(12, passwordSymbols).nextString();
-            DBHelper.getUserDao().persist(new User(username, password, Permission.MANAGE));
+            User defaultUser = new User(username, password, Permission.MANAGE);
+            DBHelper.getUserDao().persist(defaultUser);
+            DBHelper.getUserSettingsDao().persist(new UserSettings(defaultUser));
             LOG.info("New default user account created. Username: {} / Password: {}", username, password);
         }
 

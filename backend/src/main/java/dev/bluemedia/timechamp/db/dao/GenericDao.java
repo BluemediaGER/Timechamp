@@ -1,9 +1,10 @@
 package dev.bluemedia.timechamp.db.dao;
 
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.stmt.DeleteBuilder;
+import com.j256.ormlite.stmt.PreparedDelete;
+import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.stmt.QueryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -11,9 +12,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class GenericDao<T> {
-
-    /** SLF4J logger for usage in this class */
-    private static final Logger LOG = LoggerFactory.getLogger(GenericDao.class.getName());
 
     /** {@link Dao} that should be used for database operations */
     protected Dao<T, UUID> dao;
@@ -31,11 +29,7 @@ public class GenericDao<T> {
      * @param object Object that should be saved to the database.
      */
     public void persist(T object) throws SQLException {
-        try {
-            dao.create(object);
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
+        dao.create(object);
     }
 
     /**
@@ -43,23 +37,31 @@ public class GenericDao<T> {
      * @param object Object that should be updated.
      */
     public void update(T object) throws SQLException {
-        try {
-            dao.update(object);
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
+        dao.update(object);
     }
 
     /**
      * Delete an object from the database.
      * @param object Object that should be deleted from the database.
      */
-    public void delete(T object) {
-        try {
-            dao.delete(object);
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
+    public void delete(T object) throws SQLException {
+        dao.delete(object);
+    }
+
+    /**
+     * Get an {@link DeleteBuilder} instance from the DAO.
+     * @return {@link DeleteBuilder} instance from the DAO.
+     */
+    public DeleteBuilder<T, UUID> getDeleteBuilder() {
+        return dao.deleteBuilder();
+    }
+
+    /**
+     * Delete objects from the database.
+     * @param preparedDelete {@link PreparedDelete} specifying entities that should be deleted from the database.
+     */
+    public int delete(PreparedDelete<T> preparedDelete) throws SQLException {
+        return dao.delete(preparedDelete);
     }
 
     /**
@@ -67,27 +69,16 @@ public class GenericDao<T> {
      * @param id ID of the object that should be retrieved.
      * @return Object that was retrieved from the database, or null if no object could be found.
      */
-    public T get(UUID id) {
-        try {
-            return dao.queryForId(id);
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-            return null;
-        }
+    public T get(UUID id) throws SQLException {
+        return dao.queryForId(id);
     }
 
     /**
      * Retrieve all objects that are contained in the database.
      * @return List of objects that are currently stored in the database.
      */
-    public List<T> getAll() {
-        List<T> list = new ArrayList<>();
-        try {
-            list = dao.queryForAll();
-        } catch (SQLException ex) {
-            LOG.error("An unexpected error occurred", ex);
-        }
-        return list;
+    public List<T> getAll() throws SQLException {
+        return dao.queryForAll();
     }
 
     /**
@@ -130,11 +121,11 @@ public class GenericDao<T> {
 
     /**
      * Get a list of results matching the given query.
-     * @param queryBuilder Query the found objects must match.
+     * @param preparedQuery Query the found objects must match.
      * @return List of results matching the given query.
      */
-    public List<T> query(QueryBuilder<T, UUID> queryBuilder) throws SQLException {
-        return dao.query(queryBuilder.prepare());
+    public List<T> query(PreparedQuery<T> preparedQuery) throws SQLException {
+        return dao.query(preparedQuery);
     }
 
     /**

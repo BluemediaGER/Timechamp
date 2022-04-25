@@ -61,7 +61,7 @@ public class UserController {
     @RequireAuthentication
     @RequirePermission(Permission.MANAGE)
     @Produces(MediaType.APPLICATION_JSON)
-    public List<User> getUsers() {
+    public List<User> getUsers() throws SQLException {
         return DBHelper.getUserDao().getAll();
     }
 
@@ -75,7 +75,7 @@ public class UserController {
     @RequirePermission(Permission.MANAGE)
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public User getUser(@PathParam("id") UUID userId) {
+    public User getUser(@PathParam("id") UUID userId) throws SQLException {
         User user = DBHelper.getUserDao().get(userId);
         if (user == null) throw new NotFoundException("user_not_found");
         return user;

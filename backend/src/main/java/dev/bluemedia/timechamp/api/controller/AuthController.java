@@ -68,28 +68,21 @@ public class AuthController {
         User user = AuthenticationService.validateCredentials(username, password);
         if (user != null) {
             String sessionKey = AuthenticationService.issueSession(username, sr.getHeader("User-Agent"), clientIp);
-            try {
-                return Response
-                        .ok()
-                        .entity(user)
-                        .cookie(
-                                new NewCookie.Builder("tsess")
-                                        .value(sessionKey)
-                                        .path("/")
-                                        .expiry(Date.from(Instant.now().plus(90, ChronoUnit.DAYS)))
-                                        .build()
-                        ).build();
-            } catch (Exception ex) {
-                LOG.error("Failed to create session cookie for user {}", username, ex);
-                throw new GenericException(
-                        Response.Status.INTERNAL_SERVER_ERROR,
-                        "internal_server_error",
-                        "create_session_failed"
-                );
-            }
+
+            LOG.info("User '{}' ({}) logged in from '{}'", username, user.getId(), clientIp);
+            return Response
+                    .ok()
+                    .entity(user)
+                    .cookie(
+                            new NewCookie.Builder("tsess")
+                                    .value(sessionKey)
+                                    .path("/")
+                                    .expiry(Date.from(Instant.now().plus(90, ChronoUnit.DAYS)))
+                                    .build()
+                    ).build();
         }
 
-        LOG.warn("Login failed from IP {} using username {}. Reason: Invalid credentials", clientIp, username);
+        LOG.warn("Login failed from '{}' using username '{}'. Reason: Invalid credentials", clientIp, username);
         return Response
                 .status(Response.Status.UNAUTHORIZED)
                 .entity("{\"error\":\"invalid_credentials\"}")

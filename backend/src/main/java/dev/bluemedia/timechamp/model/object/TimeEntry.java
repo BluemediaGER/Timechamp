@@ -8,7 +8,9 @@ import com.j256.ormlite.table.DatabaseTable;
 import dev.bluemedia.timechamp.db.persister.DurationPersister;
 import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
 import dev.bluemedia.timechamp.db.persister.TimeEntryTypePersister;
+import dev.bluemedia.timechamp.db.persister.WorkplaceTypePersister;
 import dev.bluemedia.timechamp.model.type.TimeEntryType;
+import dev.bluemedia.timechamp.model.type.WorkplaceType;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -39,6 +41,9 @@ public class TimeEntry {
     @DatabaseField(persisterClass = TimeEntryTypePersister.class)
     private TimeEntryType type;
 
+    @DatabaseField(persisterClass = WorkplaceTypePersister.class)
+    private WorkplaceType workplace;
+
     @DatabaseField
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String description;
@@ -49,6 +54,7 @@ public class TimeEntry {
         this.id = UUID.randomUUID();
         this.parentUser = parentUser;
         this.type = type;
+        this.workplace = WorkplaceType.OFFICE;
     }
 
     public UUID getId() {
@@ -65,33 +71,24 @@ public class TimeEntry {
         return startTime;
     }
 
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
     @JsonProperty("endTime")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public LocalDateTime getEndTime() {
         return endTime;
     }
 
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
     @JsonProperty("worktime")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public Duration getWorktime() {
         return worktime;
-    }
-
-    public TimeEntryType getType() {
-        return type;
-    }
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public String getDescription() {
-        return description;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
     }
 
     public void setWorktime(Duration worktime) {
@@ -103,6 +100,27 @@ public class TimeEntry {
         if (startTime != null && endTime != null) {
             this.worktime = Duration.between(startTime, endTime);
         }
+    }
+
+    public TimeEntryType getType() {
+        return type;
+    }
+
+    public void setType(TimeEntryType type) {
+        this.type = type;
+    }
+
+    public WorkplaceType getWorkplace() {
+        return workplace;
+    }
+
+    public void setWorkplace(WorkplaceType workplaceType) {
+        this.workplace = workplaceType;
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public String getDescription() {
+        return description;
     }
 
     public void setDescription(String description) {

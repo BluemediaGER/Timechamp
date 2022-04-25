@@ -5,11 +5,14 @@ import dev.bluemedia.timechamp.db.DBHelper;
 import dev.bluemedia.timechamp.model.object.ApiKey;
 import dev.bluemedia.timechamp.model.object.Session;
 import dev.bluemedia.timechamp.model.object.User;
+import dev.bluemedia.timechamp.model.object.UserSettings;
 import dev.bluemedia.timechamp.model.request.ApiKeyCreateRequest;
 import dev.bluemedia.timechamp.model.request.UserCreateRequest;
 import dev.bluemedia.timechamp.api.exception.NotFoundException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -23,6 +26,9 @@ import java.util.UUID;
  * @author Oliver Traber
  */
 public class AuthenticationService {
+
+    /** SLF4J logger for usage in this class */
+    private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class.getName());
 
     /**
      * User agent parser to parse user agents from clients.
@@ -142,6 +148,7 @@ public class AuthenticationService {
         if (user != null) throw new BadRequestException("username_already_existing");
         User newUser = new User(request.getUsername(), request.getPassword(), request.getPermission());
         DBHelper.getUserDao().persist(newUser);
+        DBHelper.getUserSettingsDao().persist(new UserSettings(newUser));
         return newUser;
     }
 
@@ -180,9 +187,13 @@ public class AuthenticationService {
         if (userId.equals(authenticatedUser.getId())) throw new BadRequestException("cant_delete_own_user");
         User user = DBHelper.getUserDao().get(userId);
         if (user == null) throw new NotFoundException("user_not_existing");
-        DBHelper.getSessionDao().removeAllSessionsOfUser(user);
-        DBHelper.getApiKeyDao().removeAllKeysOfUser(user);
+        int deletedSessions = DBHelper.getSessionDao().removeAllSessionsOfUser(user);
+        int deletedApiKeys = DBHelper.getApiKeyDao().removeAllKeysOfUser(user);
+        int deletedUserSettings = DBHelper.getUserSettingsDao().removeSettingsOfUser(user);
+        int deletedTimeEntries = DBHelper.getTimeEntryDao().removeAllTimeEntriesOfUser(user);
         DBHelper.getUserDao().delete(user);
+        LOG.info("Deleted user '{}' (including {} Sessions, {} API Keys, {} Time Entries, {} Settings Object)",
+                user.getUsername(), deletedSessions, deletedApiKeys, deletedTimeEntries, deletedUserSettings);
         return Response.ok().entity("[]").build();
     }
 

@@ -2,8 +2,6 @@ package dev.bluemedia.timechamp.db.dao;
 
 import com.j256.ormlite.dao.Dao;
 import dev.bluemedia.timechamp.model.object.DbMetadata;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.UUID;
@@ -14,9 +12,6 @@ import java.util.UUID;
  * @author Oliver Traber
  */
 public class DbMetadataDaoImpl extends GenericDao<DbMetadata> {
-
-    /** SLF4J logger for usage in this class */
-    private static final Logger LOG = LoggerFactory.getLogger(DbMetadataDaoImpl.class.getName());
 
     /**
      * Default constructor to instantiate this class.

@@ -39,6 +39,9 @@ public class DBHelper {
     /** {@link TimeEntryDaoImpl} used to persist {@link TimeEntry} objects to the database */
     private static TimeEntryDaoImpl timeEntryDao;
 
+    /** {@link UserSettingsDaoImpl} used to persist {@link UserSettings} objects to the database */
+    private static UserSettingsDaoImpl userSettingsDao;
+
     /**
      * Initialize database connections, tables and DAOs and start migrating the schema to the current version.
      * @param jdbcUrl JDBC URL used to connect to the database.
@@ -70,6 +73,7 @@ public class DBHelper {
         apiKeyDao = new ApiKeyDaoImpl(DaoManager.createDao(connectionSource, ApiKey.class));
         sessionDao = new SessionDaoImpl(DaoManager.createDao(connectionSource, Session.class));
         timeEntryDao = new TimeEntryDaoImpl(DaoManager.createDao(connectionSource, TimeEntry.class));
+        userSettingsDao = new UserSettingsDaoImpl(DaoManager.createDao(connectionSource, UserSettings.class));
     }
 
     /**
@@ -83,6 +87,7 @@ public class DBHelper {
         TableUtils.createTableIfNotExists(connectionSource, ApiKey.class);
         TableUtils.createTableIfNotExists(connectionSource, Session.class);
         TableUtils.createTableIfNotExists(connectionSource, TimeEntry.class);
+        TableUtils.createTableIfNotExists(connectionSource, UserSettings.class);
     }
 
     /** Close the database connections */
@@ -134,5 +139,13 @@ public class DBHelper {
      */
     public static TimeEntryDaoImpl getTimeEntryDao() {
         return timeEntryDao;
+    }
+
+    /**
+     * Get the {@link UserSettingsDaoImpl} used to persist {@link UserSettings} objects to the database.
+     * @return {@link UserSettingsDaoImpl} used to persist {@link UserSettings} objects to the database.
+     */
+    public static UserSettingsDaoImpl getUserSettingsDao() {
+        return userSettingsDao;
     }
 }

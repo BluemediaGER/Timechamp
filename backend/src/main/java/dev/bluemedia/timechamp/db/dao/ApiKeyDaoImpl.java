@@ -38,9 +38,10 @@ public class ApiKeyDaoImpl extends GenericDao<ApiKey> {
      * @param parentUser User whose keys should be removed.
      * @throws SQLException Exception thrown when an error occurs during deletion.
      */
-    public void removeAllKeysOfUser(User parentUser) throws SQLException {
+    public int removeAllKeysOfUser(User parentUser) throws SQLException {
         List<ApiKey> keysToDelete = getAllByAttributeMatch("parentUser", parentUser);
         dao.delete(keysToDelete);
+        return keysToDelete.size();
     }
 
 }
