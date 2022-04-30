@@ -32,7 +32,7 @@ const i18n = createI18n({
 app.use(i18n);
 
 // Axios
-import { axios } from "axios";
+import axios from "axios";
 axios.defaults.baseURL = "/api/v1";
 axios.defaults.withCreditentials = true;
 
