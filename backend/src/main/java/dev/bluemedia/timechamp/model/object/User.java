@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
+import dev.bluemedia.timechamp.db.persister.LocalDateTimePersister;
 import dev.bluemedia.timechamp.db.persister.PermissionPersister;
 import dev.bluemedia.timechamp.model.type.Permission;
 
@@ -53,8 +54,8 @@ public class User {
     private Permission permission;
 
     /** Time at which the user logged in the last time */
-    @DatabaseField
-    private Timestamp lastLoginTime;
+    @DatabaseField(persisterClass = LocalDateTimePersister.class)
+    private LocalDateTime lastLoginTime;
 
     /** Name of the user */
     @DatabaseField
@@ -82,7 +83,6 @@ public class User {
         this.username = username;
         updatePassword(password);
         this.permission = permission;
-        this.lastLoginTime = Timestamp.valueOf(LocalDateTime.now());
     }
 
     /**
@@ -115,7 +115,7 @@ public class User {
      * @return The time at which the {@link User} was last logged in.
      */
     public LocalDateTime getLastLoginTime() {
-        return lastLoginTime.toLocalDateTime();
+        return lastLoginTime;
     }
 
     /**
@@ -173,7 +173,7 @@ public class User {
      */
     @JsonIgnore
     public void resetLastLoginTime() {
-        lastLoginTime = Timestamp.valueOf(LocalDateTime.now());
+        lastLoginTime = LocalDateTime.now();
     }
 
     /**
